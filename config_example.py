@@ -75,12 +75,12 @@ evaluation_config = {
   'INPUT_PATH': os.path.abspath('input'),
   'OUTPUT_PATH': os.path.abspath('output'),
   
-  'SHOULD_GENERATE': False,
+  'SHOULD_GENERATE': True,
   'GENERATION': {
     'NUM_GENERATIONS': 10,
     'LABELS': {
-      'deviant': 259,
-      'regular': 6221,
+      'deviant': 23,
+      'regular': 134,
     },
   },
 

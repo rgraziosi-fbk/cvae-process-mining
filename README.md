@@ -6,10 +6,12 @@ Code and additional resources for paper "Generating the traces you need: a condi
 
 Model weights, evaluation plots and additional material can be found in the folder `additional_material`.
 
-## Installation
+## Install
 
 1. Create a new conda env: `conda create --name cvae-process-mining python=3.11` and activate it
 2. Install required packages: `pip install -r requirements.txt`
+
+Note: if package installation fails with `ERROR: Failed building wheel for cchardet`, try to run `pip install cython` and then install requirements again.
 
 ## Run
 
