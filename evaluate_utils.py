@@ -27,6 +27,7 @@ def evaluate_generation(
   input_path=None,
   output_path=None,
 
+  should_use_log_4=True,
   should_use_lstm_1=True,
   should_use_lstm_2=True,
 
@@ -74,7 +75,7 @@ def evaluate_generation(
   model.eval()
 
   DEFAULT_METHODS_DICT = {
-    'LOG_4': [],
+    **({'LOG_4': []} if should_use_log_4 else {}),
     # 'LOG_20': [],
     **({'LSTM_1': []} if should_use_lstm_1 else {}),
     **({'LSTM_2': []} if should_use_lstm_2 else {}),
@@ -85,14 +86,6 @@ def evaluate_generation(
     os.makedirs(output_path)
 
   log_paths_per_method = copy.deepcopy(DEFAULT_METHODS_DICT)
-
-  # LOG_4
-  log_paths_per_method['LOG_4'] = glob.glob(os.path.join(input_path, 'log_4') + '/*.csv')
-  assert len(log_paths_per_method['LOG_4']) == 4
-
-  # LOG_20
-  # log_paths_per_method['LOG_20'] = glob.glob(os.path.join(input_path, 'log_20') + '/*.csv')
-  # assert len(log_paths_per_method['LOG_20']) == 20
 
   # VAE
   if should_generate:
@@ -109,6 +102,16 @@ def evaluate_generation(
   else:
     log_paths_per_method['VAE'] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
 
+  
+  # LOG_4
+  if should_use_log_4:
+    log_paths_per_method['LOG_4'] = glob.glob(os.path.join(input_path, 'log_4') + '/*.csv')
+    assert len(log_paths_per_method['LOG_4']) == 4
+
+  # LOG_20
+  # log_paths_per_method['LOG_20'] = glob.glob(os.path.join(input_path, 'log_20') + '/*.csv')
+  # assert len(log_paths_per_method['LOG_20']) == 20
+  
   # LSTM_1
   if should_use_lstm_1:
     log_paths_per_method['LSTM_1'] = glob.glob(os.path.join(input_path, 'lstm_1') + '/*.csv')

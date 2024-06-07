@@ -55,6 +55,7 @@ evaluate_generation(
   input_path=evaluation_config['INPUT_PATH'],
   output_path=evaluation_config['OUTPUT_PATH'],
 
+  should_use_log_4=evaluation_config['SHOULD_USE_LOG_4'],
   should_use_lstm_1=evaluation_config['SHOULD_USE_LSTM_1'],
   should_use_lstm_2=evaluation_config['SHOULD_USE_LSTM_2'],
 
