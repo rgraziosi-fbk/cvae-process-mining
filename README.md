@@ -2,6 +2,10 @@
 
 Code and additional resources for paper "Generating the traces you need: a conditional generative model for Process Mining data".
 
+## Additional material
+
+Model weights, evaluation plots and additional material can be found in the folder `additional_material`.
+
 ## Installation
 
 1. Create a new conda env: `conda create --name vae-gen-traces python=3.11` and activate it
