@@ -1,0 +1,13 @@
+.DS_Store
+.vscode
+__pycache__
+datasets/
+raytune/
+input/
+output/
+tmp/
+
+config.py
+
+*.pkl
+*.png
