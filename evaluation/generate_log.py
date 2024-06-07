@@ -43,6 +43,19 @@ def generate_log(
     label_key=dataset_info['LABEL_KEY'],
   )
 
+  test_dataset = dataset_info['CLASS'](
+    dataset_path=dataset_info['TEST'],
+    max_trace_length=dataset_info['MAX_TRACE_LENGTH'],
+    num_activities=dataset_info['NUM_ACTIVITIES'],
+    num_labels=dataset_info['NUM_LABELS'],
+    trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
+    activities=dataset_info['ACTIVITIES'],
+    activity_key=dataset_info['ACTIVITY_KEY'],
+    timestamp_key=dataset_info['TIMESTAMP_KEY'],
+    trace_key=dataset_info['TRACE_KEY'],
+    label_key=dataset_info['LABEL_KEY'],
+  )
+
   generated = []
   ts_not_conformant_count = 0
 
@@ -100,7 +113,7 @@ def generate_log(
     for i, generated_case in enumerate(generated):
       trace_attrs, activities, timestamps, label = generated_case['trace_attributes'], generated_case['activities'], generated_case['timestamps'], generated_case['label']
 
-      start_datetime = dataset.log['time:timestamp'].min() + datetime.timedelta(minutes=trace_attrs['relative_timestamp_from_start'].item())
+      start_datetime = test_dataset.log['time:timestamp'].min() + datetime.timedelta(minutes=trace_attrs['relative_timestamp_from_start'].item())
       current_datetime = start_datetime
 
       for j, activity in enumerate(activities):

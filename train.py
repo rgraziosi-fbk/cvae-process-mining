@@ -166,7 +166,7 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
     # Validation
     val_loss = 0.0
     with torch.no_grad():
-      for x, y in train_loader:
+      for x, y in val_loader:
         x, y = move_to_device(x, device), y.to(device)
 
         x_rec, mean, var = model(x, y)
