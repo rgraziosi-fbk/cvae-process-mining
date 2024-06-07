@@ -4,7 +4,9 @@ __pycache__
 datasets/
 raytune/
 input/
-output/
-tmp/
+output/*
+!output/.gitkeep
+tmp/*
+!tmp/.gitkeep
 
 config.py
