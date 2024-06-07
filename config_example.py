@@ -4,82 +4,42 @@ from ray import tune
 from dataset import GenericDataset
 
 # Dataset
-DATASET_NAME = 'traffic_fines_1_custom'
-MAX_TRACE_LENGTH = 20
+# bpic2012_a, bpic2012_b, sepsis, traffic_fines
+DATASET_NAME = 'sepsis'
 
-# bpic2015_4.csv
-# DATASET_INFO = {
-#   'CLASS': GenericDataset,
-#   'TRAIN': os.path.abspath(os.path.join('datasets', 'bpic2015_4', f'{DATASET_NAME}_TRAIN.csv')),
-#   'VAL': os.path.abspath(os.path.join('datasets', 'bpic2015_4', f'{DATASET_NAME}_VAL.csv')),
-#   'TEST': os.path.abspath(os.path.join('datasets', 'bpic2015_4', f'{DATASET_NAME}_TEST.csv')),
-#   'FULL': os.path.abspath(os.path.join('datasets', 'bpic2015_4', f'{DATASET_NAME}.csv')),
-#   'CSV_SEPARATOR': ';',
-#   'NUM_LABELS': 2,
-#   'TRACE_ATTRIBUTE_KEYS': [
-#     'SUMleges',
-#     'question',
-#     'relative_timestamp_from_start',
-#   ],
-#   'ACTIVITY_KEY': 'Activity',
-#   'TIMESTAMP_KEY': 'relative_timestamp_from_previous_activity',
-#   'TRACE_KEY': 'Case ID',
-#   'LABEL_KEY': 'label',
-# }
+# Used values in the paper: bpic2012_a|b = 100, sepsis = 50, traffic_fines = 20
+MAX_TRACE_LENGTH = 50
 
-# bpic2012_2.csv
-# DATASET_INFO = {
-#   'CLASS': GenericDataset,
-#   'TRAIN': os.path.abspath(os.path.join('datasets', 'bpic2012_2', f'{DATASET_NAME}_TRAIN.csv')),
-#   'VAL': os.path.abspath(os.path.join('datasets', 'bpic2012_2', f'{DATASET_NAME}_VAL.csv')),
-#   'TEST': os.path.abspath(os.path.join('datasets', 'bpic2012_2', f'{DATASET_NAME}_TEST.csv')),
-#   'FULL': os.path.abspath(os.path.join('datasets', 'bpic2012_2', f'{DATASET_NAME}.csv')),
-#   'CSV_SEPARATOR': ';',
-#   'NUM_LABELS': 2,
-#   'TRACE_ATTRIBUTE_KEYS': [
-#     'AMOUNT_REQ',
-#     'relative_timestamp_from_start',
-#   ],
-#   'ACTIVITY_KEY': 'Activity',
-#   'TIMESTAMP_KEY': 'relative_timestamp_from_previous_activity',
-#   'TRACE_KEY': 'Case ID',
-#   'LABEL_KEY': 'label',
-# }
+# Trace attributes to consider for each dataset
+TRACE_ATTRIBUTES_BY_DATASET = {
+  'bpic2012_a': [
+    'AMOUNT_REQ',
+  ],
 
-# sepsis_cases_1.csv
-# DATASET_INFO = {
-#   'CLASS': GenericDataset,
-#   'TRAIN': os.path.abspath(os.path.join('datasets', 'sepsis_cases_1_custom', f'{DATASET_NAME}_TRAIN.csv')),
-#   'VAL': os.path.abspath(os.path.join('datasets', 'sepsis_cases_1_custom', f'{DATASET_NAME}_VAL.csv')),
-#   'TEST': os.path.abspath(os.path.join('datasets', 'sepsis_cases_1_custom', f'{DATASET_NAME}_TEST.csv')),
-#   'FULL': os.path.abspath(os.path.join('datasets', 'sepsis_cases_1_custom', f'{DATASET_NAME}.csv')),
-#   'CSV_SEPARATOR': ';',
-#   'NUM_LABELS': 2,
-#   'TRACE_ATTRIBUTE_KEYS': [
-#     'Diagnose',
-#     'Age',
-#     'relative_timestamp_from_start',
-#   ],
-#   'ACTIVITY_KEY': 'Activity',
-#   'TIMESTAMP_KEY': 'relative_timestamp_from_previous_activity',
-#   'TRACE_KEY': 'Case ID',
-#   'LABEL_KEY': 'label',
-# }
+  'bpic2012_b': [
+    'AMOUNT_REQ',
+  ],
 
-# traffic_fines_1_custom.csv
-DATASET_INFO = {
-  'CLASS': GenericDataset,
-  'TRAIN': os.path.abspath(os.path.join('datasets', 'traffic_fines_1_custom', f'{DATASET_NAME}_TRAIN.csv')),
-  'VAL': os.path.abspath(os.path.join('datasets', 'traffic_fines_1_custom', f'{DATASET_NAME}_VAL.csv')),
-  'TEST': os.path.abspath(os.path.join('datasets', 'traffic_fines_1_custom', f'{DATASET_NAME}_TEST_cropped.csv')),
-  'FULL': os.path.abspath(os.path.join('datasets', 'traffic_fines_1_custom', f'{DATASET_NAME}.csv')),
-  'CSV_SEPARATOR': ';',
-  'NUM_LABELS': 2,
-  'TRACE_ATTRIBUTE_KEYS': [
+  'sepsis': [
+    'Diagnose',
+    'Age',
+  ],
+
+  'traffic_fines': [
     'vehicleClass',
     'amount',
-    'relative_timestamp_from_start',
   ],
+}
+
+DATASET_INFO = {
+  'CLASS': GenericDataset,
+  'TRAIN': os.path.abspath(os.path.join('datasets', DATASET_NAME, f'{DATASET_NAME}_TRAIN.csv')),
+  'VAL': os.path.abspath(os.path.join('datasets', DATASET_NAME, f'{DATASET_NAME}_VAL.csv')),
+  'TEST': os.path.abspath(os.path.join('datasets', DATASET_NAME, f'{DATASET_NAME}_TEST.csv')),
+  'FULL': os.path.abspath(os.path.join('datasets', DATASET_NAME, f'{DATASET_NAME}.csv')),
+  'CSV_SEPARATOR': ';',
+  'NUM_LABELS': 2,
+  'TRACE_ATTRIBUTE_KEYS': ['relative_timestamp_from_start'] + TRACE_ATTRIBUTES_BY_DATASET[DATASET_NAME],
   'ACTIVITY_KEY': 'Activity',
   'TIMESTAMP_KEY': 'relative_timestamp_from_previous_activity',
   'TRACE_KEY': 'Case ID',
@@ -90,6 +50,8 @@ DATASET_INFO = {
 MAX_NUM_EPOCHS = 20000
 NUM_SAMPLES = 1
 
+# Training config
+# You can pass multiple values per hyperparameter to perform hyperopt optimization with ray tune
 config = {
   'TMP_PATH': os.path.abspath('tmp'),
   'NUM_KL_ANNEALING_CYCLES': MAX_NUM_EPOCHS // 2500,
@@ -107,9 +69,9 @@ config = {
   'BATCH_SIZE': 256,
 }
 
-# Evaluation
+# Evaluation config
 evaluation_config = {
-  'MODEL_PATH': '/Users/riccardo/Desktop/RESULTS/traffic_fines_1/weights/1249/checkpoint.pt',
+  'MODEL_PATH': '/path/to/model',
   'INPUT_PATH': os.path.abspath('input'),
   'OUTPUT_PATH': os.path.abspath('output'),
   
@@ -122,8 +84,9 @@ evaluation_config = {
     },
   },
 
-  'SHOULD_USE_LSTM_1': True,
-  'SHOULD_USE_LSTM_2': True,
+  'SHOULD_USE_LOG_4': False,
+  'SHOULD_USE_LSTM_1': False,
+  'SHOULD_USE_LSTM_2': False,
 
   # control every metric computation
   'SHOULD_SKIP_ALL_METRICS_COMPUTATION': False,
@@ -160,10 +123,9 @@ evaluation_config = {
   # trace attribute distributions
   'SHOULD_PLOT_TRACE_ATTRIBUTE_DISTRIBUTIONS': False,
   'TRACE_ATTRIBUTES': {
-    # 'Age': [i for i in range(30, 90, 5)], # sepsis_cases_1
-    # 'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_2
-    # 'SUMleges': [i for i in range(-1000, 20_000, 1000)], # bpic2015_4
-    'amount': [i for i in range(0, 200, 20)], # traffic_fines_1
+    # 'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b
+    'Age': [i for i in range(30, 90, 5)], # sepsis
+    # 'amount': [i for i in range(0, 200, 20)], # traffic_fines
   },
 
   # additional settings
