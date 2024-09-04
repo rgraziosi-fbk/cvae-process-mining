@@ -4,8 +4,8 @@ import torch.nn.functional as F
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 class Encoder(nn.Module):
-  def __init__(self, trace_attributes, num_activities, num_lstm_layers,
-               attr_e_dim, act_e_dim, cf_dim, z_dim, c_dim, dropout_p,
+  def __init__(self, trace_attributes, num_activities, num_resources, num_lstm_layers,
+               attr_e_dim, act_e_dim, res_e_dim, cf_dim, z_dim, c_dim, dropout_p,
                is_conditional):
     super(Encoder, self).__init__()
 
@@ -38,8 +38,14 @@ class Encoder(nn.Module):
       padding_idx=num_activities,
     )
 
+    self.res2e = nn.Embedding(
+      num_embeddings=num_resources+1,
+      embedding_dim=res_e_dim,
+      padding_idx=num_resources,
+    )
+
     self.e2cf = nn.LSTM(
-      input_size=act_e_dim+1,
+      input_size=act_e_dim+res_e_dim+1,
       hidden_size=cf_dim,
       num_layers=num_lstm_layers,
       dropout=dropout_p if num_lstm_layers > 1 else 0,
@@ -53,7 +59,7 @@ class Encoder(nn.Module):
     self.t2var = nn.Linear(t_dim+c_dim if is_conditional else t_dim, z_dim)
 
   def forward(self, x, c=None):
-    attrs, acts, ts = x
+    attrs, acts, ts, ress = x
 
     # embed attrs
     e_attrs = []
@@ -81,6 +87,10 @@ class Encoder(nn.Module):
     ts = ts.unsqueeze(dim=2)
     e_acts = torch.cat((e_acts, ts), dim=2)
 
+    # embed and concat ress
+    e_ress = self.res2e(ress)
+    e_acts = torch.cat((e_acts, e_ress), dim=2)
+
     # forward acts to lstm
     lens = acts.argmax(dim=1)
     e_packed = pack_padded_sequence(e_acts, lens.to('cpu'), batch_first=True, enforce_sorted=False)
@@ -100,14 +110,15 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-  def __init__(self, trace_attributes, num_activities, max_trace_length, num_lstm_layers,
-               act_e_dim, cf_dim, t_dim, z_dim, c_dim, dropout_p,
+  def __init__(self, trace_attributes, num_activities, num_resources, max_trace_length, num_lstm_layers,
+               act_e_dim, res_e_dim, cf_dim, t_dim, z_dim, c_dim, dropout_p,
                tot_attr_e_dim, is_conditional,
-               encoder_act2e, device):
+               encoder_act2e, encoder_res2e, device):
     super(Decoder, self).__init__()
 
     self.trace_attributes = trace_attributes
     self.num_activities = num_activities
+    self.num_resources = num_resources
     self.max_trace_length = max_trace_length
     self.num_lstm_layers = num_lstm_layers
     self.is_conditional = is_conditional
@@ -115,6 +126,7 @@ class Decoder(nn.Module):
     self.cf_dim = cf_dim
     self.t_dim = t_dim
     self.encoder_act2e = encoder_act2e
+    self.encoder_res2e = encoder_res2e
     self.device = device
 
     self.dropout = nn.Dropout(p=dropout_p)
@@ -148,8 +160,16 @@ class Decoder(nn.Module):
       batch_first=True,
     )
 
+    self.t2e_res = nn.LSTM(
+      input_size=t_dim+act_e_dim+res_e_dim,
+      hidden_size=cf_dim,
+      num_layers=num_lstm_layers,
+      dropout=dropout_p if num_lstm_layers > 1 else 0,
+      batch_first=True,
+    )
+
     self.t2e_ts = nn.LSTM(
-      input_size=t_dim+act_e_dim+1,
+      input_size=t_dim+act_e_dim+res_e_dim+1,
       hidden_size=cf_dim,
       num_layers=num_lstm_layers,
       dropout=dropout_p if num_lstm_layers > 1 else 0,
@@ -164,6 +184,7 @@ class Decoder(nn.Module):
       self.dropout,
       nn.Linear(cf_dim // 2, 1),
     )
+    self.e2res = nn.Linear(cf_dim, num_resources)
 
 
   def forward(self, z, c=None):
@@ -183,15 +204,20 @@ class Decoder(nn.Module):
 
     # acts
     eot_input = self.encoder_act2e(torch.tensor([self.num_activities-1], dtype=torch.int64).to(self.device)).repeat(t_rec.shape[0], 1)
+    eot_res_input = self.encoder_res2e(torch.tensor([self.num_resources-1], dtype=torch.int64).to(self.device)).repeat(t_rec.shape[0], 1)
     ts_initial = torch.tensor([0.0]).repeat(t_rec.shape[0], 1).to(self.device)
 
     acts_lstm_input = torch.cat((t_rec, eot_input), dim=1).view(t_rec.shape[0], 1, -1)
     acts_lstm_hidden = (torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device), torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device))
-    ts_lstm_input = torch.cat((t_rec, eot_input, ts_initial), dim=1).view(t_rec.shape[0], 1, -1)
-    ts_lstm_hidden = (torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device), torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device))
-    decoder_act_outputs, decoder_ts_outputs = [], []
 
-    act_rec, ts_rec = eot_input, ts_initial
+    ress_lstm_input = torch.cat((t_rec, eot_input, eot_res_input), dim=1).view(t_rec.shape[0], 1, -1)
+    ress_lstm_hidden = (torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device), torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device))
+
+    ts_lstm_input = torch.cat((t_rec, eot_input, eot_res_input, ts_initial), dim=1).view(t_rec.shape[0], 1, -1)
+    ts_lstm_hidden = (torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device), torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device))
+    decoder_act_outputs, decoder_res_outputs, decoder_ts_outputs = [], [], []
+
+    act_rec, res_rec, ts_rec = eot_input, eot_res_input, ts_initial
     for _ in range(self.max_trace_length):
       # acts lstm
       acts_lstm_output, acts_lstm_hidden = self.t2e_act(acts_lstm_input, acts_lstm_hidden)
@@ -202,8 +228,18 @@ class Decoder(nn.Module):
       act_rec = act_rec.view(act_rec.shape[0], -1).argmax(dim=1)
       act_rec = self.encoder_act2e(act_rec)
 
+      # ress lstm
+      ress_lstm_input = torch.cat((t_rec, act_rec, res_rec), dim=1).view(t_rec.shape[0], 1, -1)
+      ress_lstm_output, ress_lstm_hidden = self.t2e_res(ress_lstm_input, ress_lstm_hidden)
+
+      # ress "de-embedding"
+      res_rec = self.e2res(ress_lstm_output)
+      decoder_res_outputs.append(res_rec)
+      res_rec = res_rec.view(res_rec.shape[0], -1).argmax(dim=1)
+      res_rec = self.encoder_res2e(res_rec)
+
       # ts lstm
-      ts_lstm_input = torch.cat((t_rec, act_rec, ts_rec), dim=1).view(t_rec.shape[0], 1, -1)
+      ts_lstm_input = torch.cat((t_rec, act_rec, res_rec, ts_rec), dim=1).view(t_rec.shape[0], 1, -1)
       ts_lstm_output, ts_lstm_hidden = self.t2e_ts(ts_lstm_input, ts_lstm_hidden)
 
       # ts reconstruction
@@ -217,9 +253,12 @@ class Decoder(nn.Module):
     acts_rec = torch.cat(decoder_act_outputs, dim=1)
     acts_rec = F.softmax(acts_rec, dim=2)
 
+    ress_rec = torch.cat(decoder_res_outputs, dim=1)
+    ress_rec = F.softmax(ress_rec, dim=2)
+
     ts_rec = torch.cat(decoder_ts_outputs, dim=1)
 
-    return attrs_rec, acts_rec, ts_rec
+    return attrs_rec, acts_rec, ts_rec, ress_rec
 
 
 class VAE(nn.Module):
@@ -228,8 +267,8 @@ class VAE(nn.Module):
 
   (attrs, acts) -> (e_attrs, e_acts) -> (e_attrs, cf) -> t -> z -> t_rec -> (e_attrs_rec, cf_rec) -> (e_attrs_rec, e_acts_rec) -> (attrs_rec, acts_rec)
   """
-  def __init__(self, trace_attributes=[], num_activities=12, max_trace_length=10,
-               num_lstm_layers=1, attr_e_dim=4, act_e_dim=3, cf_dim=5, z_dim=20, c_dim=0,
+  def __init__(self, trace_attributes=[], num_activities=12, num_resources=5, max_trace_length=10,
+               num_lstm_layers=1, attr_e_dim=4, act_e_dim=3, res_e_dim=3, cf_dim=5, z_dim=20, c_dim=0,
                dropout_p=0.1, device='cpu'):
     super(VAE, self).__init__()
 
@@ -240,9 +279,11 @@ class VAE(nn.Module):
     self.encoder = Encoder(
       trace_attributes=trace_attributes,
       num_activities=num_activities,
+      num_resources=num_resources,
       num_lstm_layers=num_lstm_layers,
       attr_e_dim=attr_e_dim,
       act_e_dim=act_e_dim,
+      res_e_dim=res_e_dim,
       cf_dim=cf_dim,
       z_dim=z_dim,
       c_dim=c_dim,
@@ -255,8 +296,10 @@ class VAE(nn.Module):
       trace_attributes=trace_attributes,
       max_trace_length=max_trace_length,
       num_activities=num_activities,
+      num_resources=num_resources,
       num_lstm_layers=num_lstm_layers,
       act_e_dim=act_e_dim,
+      res_e_dim=res_e_dim,
       cf_dim=cf_dim,
       t_dim=self.encoder.t_dim,
       z_dim=z_dim,
@@ -265,6 +308,7 @@ class VAE(nn.Module):
       tot_attr_e_dim=self.encoder.tot_attr_e_dim,
       is_conditional=self.is_conditional,
       encoder_act2e=self.encoder.act2e,
+      encoder_res2e=self.encoder.res2e,
       device=device,
     )
 

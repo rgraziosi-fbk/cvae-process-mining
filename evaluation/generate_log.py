@@ -13,9 +13,9 @@ from scripts.preprocess_log import add_relative_timestamp_between_activities, ad
 def generate(model, mean, var, c=None):
   z = mean + var*torch.randn_like(var)
   z = z.view(1, -1)
-  attrs, acts, ts = model.decode(z, c)
+  attrs, acts, ts, ress = model.decode(z, c)
   
-  return attrs, acts, ts
+  return attrs, acts, ts, ress
 
 
 def generate_log(
@@ -37,8 +37,10 @@ def generate_log(
     num_labels=dataset_info['NUM_LABELS'],
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
+    resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
   )
@@ -50,8 +52,10 @@ def generate_log(
     num_labels=dataset_info['NUM_LABELS'],
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
+    resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
   )
@@ -69,7 +73,7 @@ def generate_log(
 
     for _ in range(num_to_generate):
       mean, var = torch.zeros((model.z_dim)), torch.ones((model.z_dim))
-      attrs, acts, ts = generate(model, mean, var, condition_one_hot)
+      attrs, acts, ts, ress = generate(model, mean, var, condition_one_hot)
 
       # count number of ts < 0, and set them to 0
       ts_not_conformant_count += torch.sum(ts < 0).item()
@@ -93,10 +97,14 @@ def generate_log(
       # acts
       acts = torch.argmax(acts, dim=2)
 
+      # ress
+      ress = torch.argmax(ress, dim=2)
+
       generated.append({
         'trace_attributes': trace_attrs,
         'activities': acts[0],
         'timestamps': ts[0],
+        'resources': ress[0],
         'label': condition,
       })
 
@@ -111,13 +119,14 @@ def generate_log(
     new_data = []
 
     for i, generated_case in enumerate(generated):
-      trace_attrs, activities, timestamps, label = generated_case['trace_attributes'], generated_case['activities'], generated_case['timestamps'], generated_case['label']
+      trace_attrs, activities, timestamps, resources, label = generated_case['trace_attributes'], generated_case['activities'], generated_case['timestamps'], generated_case['resources'], generated_case['label']
 
       start_datetime = test_dataset.log['time:timestamp'].min() + datetime.timedelta(minutes=trace_attrs['relative_timestamp_from_start'].item())
       current_datetime = start_datetime
 
-      for j, activity in enumerate(activities):
+      for j, (activity, resource) in enumerate(zip(activities)):
         activity_name = dataset.n2activity[activity.item()]
+        resource_name = dataset.n2resource[resource.item()]
 
         if activity_name == 'EOT':
           break
@@ -133,11 +142,13 @@ def generate_log(
           **cat_attrs,
           **num_attrs,
           dataset_info['ACTIVITY_KEY']: activity_name,
+          dataset_info['RESOURCE_KEY']: resource_name,
           dataset_info['TRACE_KEY']: f'GEN{i}',
           dataset_info['LABEL_KEY']: label,
           # also add these default columns
           'time:timestamp': formatted_datetime,
           'concept:name': activity_name,
+          'org:resource': resource_name,
           'case:concept:name': f'GEN{i}',
           'case:label': label,
         }
@@ -145,7 +156,7 @@ def generate_log(
         new_data.append(row)
 
     new_columns = dataset.log.columns.tolist()
-    new_columns.extend(['concept:name', 'case:concept:name', 'case:label']) # add default columns
+    new_columns.extend(['concept:name', 'case:concept:name', 'case:label', 'org:resource']) # add default columns
     new_log = pd.DataFrame(new_data, columns=new_columns)
     new_log['time:timestamp'] = pd.to_datetime(new_log['time:timestamp'])
 

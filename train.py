@@ -10,7 +10,7 @@ from model import VAE
 from train_utils import get_weights_cycle_linear
 from utils import move_to_device
 
-def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='cpu', seed=42):
+def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
   # Dataset
   generator = torch.Generator().manual_seed(seed)
   train_dataset = dataset_info['CLASS'](
@@ -20,8 +20,10 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
     num_labels=dataset_info['NUM_LABELS'],
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
+    resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
   )
@@ -35,8 +37,10 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
     num_labels=dataset_info['NUM_LABELS'],
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
+    resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
   )
@@ -46,10 +50,12 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
   model = VAE(
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     num_activities=dataset_info['NUM_ACTIVITIES'],
+    num_resources=dataset_info['NUM_RESOURCES'],
     max_trace_length=dataset_info['MAX_TRACE_LENGTH'],
     num_lstm_layers=config['NUM_LSTM_LAYERS'],
     attr_e_dim=config['ATTR_E_DIM'],
     act_e_dim=config['ACT_E_DIM'],
+    res_e_dim=config['RES_E_DIM'],
     cf_dim=config['CF_DIM'],
     c_dim=config['C_DIM'],
     z_dim=config['Z_DIM'],
@@ -59,15 +65,16 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
 
   # Loss functions
   def reconstruction_loss_fn(x_rec, x):
-    cat_attrs_loss, num_attrs_loss, cf_loss, ts_loss = torch.tensor(0.0).to(device), torch.tensor(0.0).to(device), torch.tensor(0.0).to(device), torch.tensor(0.0).to(device)
+    cat_attrs_loss, num_attrs_loss, cf_loss, ts_loss, res_loss = torch.tensor(0.0).to(device), torch.tensor(0.0).to(device), torch.tensor(0.0).to(device), torch.tensor(0.0).to(device), torch.tensor(0.0).to(device)
 
     cat_attr_loss_fn = nn.BCELoss(reduction='sum')
     num_attr_loss_fn = nn.MSELoss(reduction='sum')
     cf_loss_fn = nn.BCELoss(reduction='sum')
     ts_loss_fn = nn.MSELoss(reduction='sum')
+    res_loss_fn = nn.BCELoss(reduction='sum')
 
-    attrs_rec, acts_rec, ts_rec = x_rec
-    attrs, acts, ts = x
+    attrs_rec, acts_rec, ts_rec, ress_rec = x_rec
+    attrs, acts, ts, ress = x
 
     # convert categorical attrs to one-hot encoding
     for attr_name, attr_val in attrs.items():
@@ -98,9 +105,16 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
       
     ts_loss += ts_loss_fn(ts_rec, ts)
 
-    loss = cat_attrs_loss + num_attrs_loss + cf_loss + ts_loss
+    # ress
+    ress = torch.where(ress == train_dataset.resource2n[train_dataset.PADDING_RESOURCE], train_dataset.resource2n[train_dataset.EOT_RESOURCE], ress).to(device)
+    ress = F.one_hot(ress.to(torch.int64), num_classes=dataset_info['NUM_RESOURCES']).to(torch.float32)
 
-    return loss, torch.tensor([cat_attrs_loss, num_attrs_loss, cf_loss, ts_loss])
+    res_loss += res_loss_fn(ress_rec, ress)
+
+    # sum up loss components
+    loss = cat_attrs_loss + num_attrs_loss + cf_loss + ts_loss + res_loss
+
+    return loss, torch.tensor([cat_attrs_loss, num_attrs_loss, cf_loss, ts_loss, res_loss])
 
   def kl_divergence_loss_fn(mean, var):
     var = torch.clamp(var, min=1e-9)
@@ -129,7 +143,7 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
     train_loss = 0.0
     train_rec_loss = 0.0
     train_kl_loss = 0.0
-    train_rec_loss_components = torch.tensor([0.0, 0.0, 0.0, 0.0])
+    train_rec_loss_components = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0])
 
     ts_num_conformant = 0
 
@@ -154,7 +168,7 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
       optimizer.step()
 
       # compute number of traces with monotonically increasing ts
-      _, _, ts_rec = x_rec
+      _, _, ts_rec, _ = x_rec
       ts_num_conformant += torch.sum(ts_rec >= -0.000001).item()
 
     train_loss /= len(train_dataset)
@@ -201,6 +215,7 @@ def train(config, dataset_info={}, checkpoint_every=10, tmp_path='tmp', device='
         'rec_num_attrs_loss': train_rec_loss_components[1].item(),
         'rec_cf_loss': train_rec_loss_components[2].item(),
         'rec_ts_loss': train_rec_loss_components[3].item(),
+        'rec_res_loss': train_rec_loss_components[4].item(),
 
         'rec_ts_perc_conformant': ts_perc_conformant,
       }

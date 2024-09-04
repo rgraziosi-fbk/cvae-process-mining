@@ -6,7 +6,7 @@ import shutil
 from functools import partial
 from ray import tune
 from ray.tune.schedulers import ASHAScheduler
-from ray.air.config import RunConfig
+from ray.air.config import RunConfig, CheckpointConfig
 
 from arg_parser import parse_arguments
 from utils import get_dataset_attributes_info
@@ -46,6 +46,7 @@ dataset_attributes_info = get_dataset_attributes_info(
   DATASET_INFO['FULL'],
   activity_key=DATASET_INFO['ACTIVITY_KEY'],
   trace_key=DATASET_INFO['TRACE_KEY'],
+  resource_key=DATASET_INFO['RESOURCE_KEY'],
   trace_attributes=DATASET_INFO['TRACE_ATTRIBUTE_KEYS'],
 )
 max_trace_length = MAX_TRACE_LENGTH if MAX_TRACE_LENGTH else dataset_attributes_info['max_trace_length']
@@ -53,6 +54,8 @@ max_trace_length = MAX_TRACE_LENGTH if MAX_TRACE_LENGTH else dataset_attributes_
 DATASET_INFO['MAX_TRACE_LENGTH'] = max_trace_length + 1
 DATASET_INFO['ACTIVITIES'] = dataset_attributes_info['activities']
 DATASET_INFO['NUM_ACTIVITIES'] = len(dataset_attributes_info['activities']) + 1
+DATASET_INFO['RESOURCES'] = dataset_attributes_info['resources']
+DATASET_INFO['NUM_RESOURCES'] = len(dataset_attributes_info['resources']) + 1
 DATASET_INFO['TRACE_ATTRIBUTES'] = dataset_attributes_info['trace_attributes']
 
 # Configure hyperparam search space
@@ -65,7 +68,7 @@ scheduler = ASHAScheduler(
   reduction_factor=2
 )
 
-trainable = partial(train, dataset_info=DATASET_INFO, checkpoint_every=50, tmp_path=config['TMP_PATH'], device=DEVICE)
+trainable = partial(train, dataset_info=DATASET_INFO, checkpoint_every=50, device=DEVICE)
 if DEVICE_STR == 'cpu':
   trainable_with_resources = tune.with_resources(trainable, { "cpu": 1 })
 else:
@@ -87,6 +90,9 @@ tuner = tune.Tuner(
       min_delta=config['EARLY_STOPPING_MIN_DELTA'],
       debug=config['EARLY_STOPPING_DEBUG'],
     ),
+    checkpoint_config=CheckpointConfig(
+      num_to_keep=None,
+    )
   ),
 )
 
