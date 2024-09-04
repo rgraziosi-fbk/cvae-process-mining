@@ -30,6 +30,9 @@ class EarlyStopper(Stopper):
       if self.counter >= self.patience:
         self.should_stop = True
 
+    if self.should_stop:
+      print(f'Early stopping: validation loss has not improved for {self.patience} epochs')
+
     return self.should_stop
 
   def stop_all(self):
