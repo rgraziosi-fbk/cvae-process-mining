@@ -98,7 +98,7 @@ def generate_log(
       acts = torch.argmax(acts, dim=2)
 
       # ress
-      ress = torch.argmax(ress, dim=2)
+      ress = torch.argmax(ress[:,:,:-1], dim=2) # exclude eot resource
 
       generated.append({
         'trace_attributes': trace_attrs,
@@ -124,7 +124,7 @@ def generate_log(
       start_datetime = test_dataset.log['time:timestamp'].min() + datetime.timedelta(minutes=trace_attrs['relative_timestamp_from_start'].item())
       current_datetime = start_datetime
 
-      for j, (activity, resource) in enumerate(zip(activities)):
+      for j, (activity, resource) in enumerate(zip(activities, resources)):
         activity_name = dataset.n2activity[activity.item()]
         resource_name = dataset.n2resource[resource.item()]
 
