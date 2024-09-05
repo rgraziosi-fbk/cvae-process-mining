@@ -95,6 +95,10 @@ evaluate_generation(
   should_plot_activity_duration_distributions=evaluation_config['SHOULD_PLOT_ACTIVITY_DURATION_DISTRIBUTIONS'],
   activity_duration_distributions_filter_by_label=evaluation_config['ACTIVITY_DURATION_DISTRIBUTIONS_FILTER_BY_LABEL'],
 
+  # resources
+  should_plot_resource_distribution=evaluation_config['SHOULD_PLOT_RESOURCE_DISTRIBUTION'],
+  should_plot_activity_by_resource_distribution=evaluation_config['SHOULD_PLOT_ACTIVITY_BY_RESOURCE_DISTRIBUTION'],
+
   # trace attribute distributions
   should_plot_trace_attribute_distributions=evaluation_config['SHOULD_PLOT_TRACE_ATTRIBUTE_DISTRIBUTIONS'],
   trace_attributes=evaluation_config['TRACE_ATTRIBUTES'],

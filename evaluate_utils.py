@@ -11,6 +11,8 @@ from evaluation.plot_tsne import plot_tsne
 from evaluation.plot_trace_length_distribution import plot_trace_length_distribution
 from evaluation.compute_variant_stats import compute_variant_stats
 from evaluation.plot_activity_duration_distributions import plot_activity_duration_distributions
+from evaluation.plot_resource_distribution import plot_resource_distribution
+from evaluation.plot_activity_distribution_by_resource import plot_activity_distribution_by_resource
 from evaluation.plot_trace_attribute_distributions import plot_trace_attribute_distributions
 
 from conformance import discover_declare_model
@@ -61,6 +63,10 @@ def evaluate_generation(
   # activity duration distribution
   should_plot_activity_duration_distributions=True,
   activity_duration_distributions_filter_by_label=None,
+
+  # resources
+  should_plot_resource_distribution=True,
+  should_plot_activity_by_resource_distribution=True,
 
   # trace attribute distributions
   should_plot_trace_attribute_distributions=True,
@@ -316,10 +322,10 @@ def evaluate_generation(
   if should_plot_activity_duration_distributions:
     print('Plotting activity duration distributions...')
 
-    for method, variant_stats in variant_stats_gen.items():
+    for method, log_paths in log_paths_per_method.items():
       if method in ['LOG_4', 'LOG_20']: continue
 
-      for i, generated_log_path in enumerate(log_paths_per_method['VAE']):
+      for i, generated_log_path in enumerate(log_paths):
         plot_activity_duration_distributions(
           [dataset_info['TEST'], generated_log_path],
           dataset_info,
@@ -331,20 +337,48 @@ def evaluate_generation(
           activity_col_name=[dataset_info['ACTIVITY_KEY'], 'concept:name'],
         )
 
+  # Plot resource distribution
+  if should_plot_resource_distribution:
+    print('Plotting resource distributions...')
+
+    for method, log_paths in log_paths_per_method.items():
+      if method in ['LOG_4', 'LOG_20']: continue
+    
+      for i, generated_log_path in enumerate(log_paths):
+        plot_resource_distribution(
+          dataset_info['TEST'],
+          generated_log_path,
+          dataset_info=dataset_info,
+          output_path=os.path.join(output_path, 'resource-distributions'),
+          output_filename=f'resource-distribution-gen-{method}-{i+1}.png',
+        )
+
+  if should_plot_activity_by_resource_distribution:
+    print('Plotting activity by resource distributions...')
+
+    for method, log_paths in log_paths_per_method.items():
+      if method in ['LOG_4', 'LOG_20']: continue
+
+      for i, generated_log_path in enumerate(log_paths):
+        plot_activity_distribution_by_resource(
+          dataset_info['TEST'],
+          generated_log_path,
+          dataset_info=dataset_info,
+          output_path=os.path.join(output_path, 'activity-by-resource-distributions'),
+          output_filename=f'activity-by-resource-distribution-gen-{method}-{i+1}.png',
+        )
+
   # Plot trace attribute distributions
   if should_plot_trace_attribute_distributions:
     print('Plotting trace attribute distributions...')
-
-    for method, variant_stats in variant_stats_gen.items():
-      if method in ['LOG_4', 'LOG_20', 'LSTM_1', 'LSTM_2']: continue
       
-      for i, generated_log_path in enumerate(log_paths_per_method['VAE']):
-        plot_trace_attribute_distributions(
-          dataset_info['TEST'],
-          generated_log_path,
-          output_path=os.path.join(output_path, 'trace-attribute-distributions'),
-          output_filename=f'trace-attribute-distributions-gen-{method}-{i+1}.png',
-          trace_attributes=trace_attributes,
-          original_log_trace_key=dataset_info['TRACE_KEY'],
-          generated_log_trace_key='case:concept:name',
-        )
+    for i, generated_log_path in enumerate(log_paths_per_method['VAE']):
+      plot_trace_attribute_distributions(
+        dataset_info['TEST'],
+        generated_log_path,
+        output_path=os.path.join(output_path, 'trace-attribute-distributions'),
+        output_filename=f'trace-attribute-distributions-gen-VAE-{i+1}.png',
+        trace_attributes=trace_attributes,
+        original_log_trace_key=dataset_info['TRACE_KEY'],
+        generated_log_trace_key='case:concept:name',
+      )
