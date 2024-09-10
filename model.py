@@ -169,7 +169,7 @@ class Decoder(nn.Module):
     )
 
     self.t2e_ts = nn.LSTM(
-      input_size=t_dim+act_e_dim+res_e_dim+1,
+      input_size=t_dim+act_e_dim+1,
       hidden_size=cf_dim,
       num_layers=num_lstm_layers,
       dropout=dropout_p if num_lstm_layers > 1 else 0,
@@ -213,7 +213,7 @@ class Decoder(nn.Module):
     ress_lstm_input = torch.cat((t_rec, eot_input, eot_res_input), dim=1).view(t_rec.shape[0], 1, -1)
     ress_lstm_hidden = (torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device), torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device))
 
-    ts_lstm_input = torch.cat((t_rec, eot_input, eot_res_input, ts_initial), dim=1).view(t_rec.shape[0], 1, -1)
+    ts_lstm_input = torch.cat((t_rec, eot_input, ts_initial), dim=1).view(t_rec.shape[0], 1, -1)
     ts_lstm_hidden = (torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device), torch.zeros((self.num_lstm_layers, t_rec.shape[0], self.cf_dim)).to(self.device))
     decoder_act_outputs, decoder_res_outputs, decoder_ts_outputs = [], [], []
 
@@ -239,7 +239,7 @@ class Decoder(nn.Module):
       res_rec = self.encoder_res2e(res_rec)
 
       # ts lstm
-      ts_lstm_input = torch.cat((t_rec, act_rec, res_rec, ts_rec), dim=1).view(t_rec.shape[0], 1, -1)
+      ts_lstm_input = torch.cat((t_rec, act_rec, ts_rec), dim=1).view(t_rec.shape[0], 1, -1)
       ts_lstm_output, ts_lstm_hidden = self.t2e_ts(ts_lstm_input, ts_lstm_hidden)
 
       # ts reconstruction
