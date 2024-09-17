@@ -14,13 +14,15 @@ class GenericDataset(Dataset):
     trace_key: name of the column of the log containing traces id
     activity_key: name of the column of the log containing activity names
     timestamp_key: name of the column of the log containing the timestamp
+    resource_key: name of the column of the log containing the resource
     label_key: name of the column of the log containing the label
     activities: (optional) list of activities to consider (used to impose a specific list of activities instead of using the ones found in the provided log)
+    resources: (optional) list of resources to consider (used to impose a specific list of resources instead of using the ones found in the provided log)
   """
   def __init__(
     self, dataset_path='', max_trace_length=100, num_activities=10, num_labels=2,
-    trace_key='case:concept:name', activity_key='concept:name', timestamp_key='time:timestamp',
-    label_key='case:label', trace_attributes=[], activities=None, highest_ts=None,
+    trace_key='case:concept:name', activity_key='concept:name', timestamp_key='time:timestamp', resource_key='org:resource',
+    label_key='case:label', trace_attributes=[], activities=None, resources=None, highest_ts=None,
   ):
     self.log = read_log(dataset_path, verbose=False)
 
@@ -33,6 +35,10 @@ class GenericDataset(Dataset):
     self.EOT_ACTIVITY = 'EOT'
     self.PADDING_ACTIVITY = 'PAD'
 
+    # Special resources
+    self.EOT_RESOURCE = 'EOT-RES'
+    self.PADDING_RESOURCE = 'PAD-RES'
+
     # Get activity names
     if activities is None:
       activities = self.log[activity_key].unique().tolist()
@@ -44,9 +50,24 @@ class GenericDataset(Dataset):
 
     assert len(activities)-1 == self.num_activities # Check whether num_activities and found number activities coincide
 
-    # Mapping from activity name to one hot encoding
+    # Mapping from activity name to index
     self.activity2n = { a: n for n, a in enumerate(activities) }
     self.n2activity = { n: a for n, a in enumerate(activities) }
+
+
+    # Get resources
+    if resources is None:
+      resources = self.log[resource_key].unique().tolist()
+    else:
+      resources = copy.deepcopy(resources)
+    resources.sort()
+    resources.append(self.EOT_RESOURCE)
+    resources.append(self.PADDING_RESOURCE)
+
+    # Mapping from resource name to index
+    self.resource2n = { r: n for n, r in enumerate(resources) }
+    self.n2resource = { n: r for n, r in enumerate(resources) }
+
 
     # Get highest ts value
     self.highest_ts = self.log[timestamp_key].quantile(q=0.95) if highest_ts is None else highest_ts
@@ -101,12 +122,18 @@ class GenericDataset(Dataset):
       x_ts += [0] * (self.max_trace_length - len(trace) - 1) # append padding if needed
       x_ts = [ts / self.highest_ts for ts in x_ts] # normalize
       x_ts = torch.tensor(x_ts).to(torch.float32) # convert to tensor
+
+      # resources
+      x_res = self.log.iloc[trace][resource_key].tolist()[:self.max_trace_length-1]
+      x_res += [self.EOT_RESOURCE]
+      x_res += [self.PADDING_RESOURCE] * (self.max_trace_length - len(trace) - 1)
+      x_res = torch.tensor([self.resource2n[r] for r in x_res]).to(torch.int)
       
       # label
       y = self.log.iloc[trace][label_key].tolist()[0] # get label from log
       y = self.label2onehot[y].to(torch.float32) # convert to one-hot tensor
 
-      self.x.append((x_attr, x_trace, x_ts))
+      self.x.append((x_attr, x_trace, x_ts, x_res))
       self.y.append(y)
       
   def __len__(self):

@@ -21,7 +21,10 @@ def read_log(dataset_path, separator=';', timestamp_key='time:timestamp', verbos
 
 
 def get_dataset_attributes_info(
-  dataset_path, activity_key='concept:name', trace_key='case:concept:name',
+  dataset_path,
+  activity_key='concept:name',
+  trace_key='case:concept:name',
+  resource_key='org:resource',
   trace_attributes=[],
 ):
   dataset_attributes_info = {}
@@ -30,6 +33,9 @@ def get_dataset_attributes_info(
 
   # Compute list of activities
   dataset_attributes_info['activities'] = log[activity_key].unique().tolist()
+
+  # Compute list of resources
+  dataset_attributes_info['resources'] = log[resource_key].unique().tolist()
 
   # Compute max trace length
   traces = list(log.groupby(trace_key).groups.values())

@@ -19,7 +19,9 @@ def plot_trace_length_distribution(original_dataset_path, generated_log_path, da
     num_labels=2,
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
+    resource_key=dataset_info['RESOURCE_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
@@ -32,6 +34,7 @@ def plot_trace_length_distribution(original_dataset_path, generated_log_path, da
     num_labels=2,
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
@@ -46,7 +49,7 @@ def plot_trace_length_distribution(original_dataset_path, generated_log_path, da
     # if this trace doesn't have the specified label, skip it
     if condition is not None and not torch.equal(original_dataset.label2onehot[condition], y): continue
     
-    _, acts, _ = x
+    _, acts, _, _ = x
 
     acts = acts.tolist()
     original_dataset_lens.append(acts.index(original_dataset.activity2n[original_dataset.EOT_ACTIVITY]))
@@ -55,7 +58,7 @@ def plot_trace_length_distribution(original_dataset_path, generated_log_path, da
     # if this trace doesn't have the specified label, skip it
     if condition is not None and not torch.equal(original_dataset.label2onehot[condition], y): continue
 
-    _, acts, _ = x
+    _, acts, _, _ = x
 
     acts = acts.tolist()
     generated_dataset_lens.append(acts.index(generated_dataset.activity2n[generated_dataset.EOT_ACTIVITY]))

@@ -50,7 +50,9 @@ def plot_tsne(
     num_labels=2,
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
+    resource_key=dataset_info['RESOURCE_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
@@ -63,6 +65,7 @@ def plot_tsne(
     num_labels=2,
     trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
     activities=dataset_info['ACTIVITIES'],
+    resources=dataset_info['RESOURCES'],
     activity_key=dataset_info['ACTIVITY_KEY'],
     timestamp_key=dataset_info['TIMESTAMP_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
@@ -74,7 +77,7 @@ def plot_tsne(
 
   def get_1d_trace(x):
     t = []
-    attrs, acts, ts = x
+    attrs, acts, ts, ress = x
 
     # add attributes
     for i in range(len(original_dataset.trace_attributes)):
@@ -93,6 +96,8 @@ def plot_tsne(
     if consider_timestamps:
       ts = ts.tolist()
       t.extend(ts)
+
+    # TODO: add resources to tsne plot
 
     return t
 

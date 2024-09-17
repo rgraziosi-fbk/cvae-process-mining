@@ -19,6 +19,7 @@ dataset_attributes_info = get_dataset_attributes_info(
   dataset_path=DATASET_INFO['FULL'],
   activity_key=DATASET_INFO['ACTIVITY_KEY'],
   trace_key=DATASET_INFO['TRACE_KEY'],
+  resource_key=DATASET_INFO['RESOURCE_KEY'],
   trace_attributes=DATASET_INFO['TRACE_ATTRIBUTE_KEYS'],
 )
 max_trace_length = MAX_TRACE_LENGTH if MAX_TRACE_LENGTH else dataset_attributes_info['max_trace_length']
@@ -26,6 +27,8 @@ max_trace_length = MAX_TRACE_LENGTH if MAX_TRACE_LENGTH else dataset_attributes_
 DATASET_INFO['MAX_TRACE_LENGTH'] = max_trace_length + 1
 DATASET_INFO['ACTIVITIES'] = dataset_attributes_info['activities']
 DATASET_INFO['NUM_ACTIVITIES'] = len(dataset_attributes_info['activities']) + 1
+DATASET_INFO['RESOURCES'] = dataset_attributes_info['resources']
+DATASET_INFO['NUM_RESOURCES'] = len(dataset_attributes_info['resources']) + 1
 DATASET_INFO['TRACE_ATTRIBUTES'] = dataset_attributes_info['trace_attributes']
 
 config['C_DIM'] = DATASET_INFO['NUM_LABELS']
@@ -34,10 +37,12 @@ config['C_DIM'] = DATASET_INFO['NUM_LABELS']
 model = VAE(
   trace_attributes=DATASET_INFO['TRACE_ATTRIBUTES'],
   num_activities=DATASET_INFO['NUM_ACTIVITIES'],
+  num_resources=DATASET_INFO['NUM_RESOURCES'],
   max_trace_length=DATASET_INFO['MAX_TRACE_LENGTH'],
   num_lstm_layers=config['NUM_LSTM_LAYERS'],
   attr_e_dim=config['ATTR_E_DIM'],
   act_e_dim=config['ACT_E_DIM'],
+  res_e_dim=config['RES_E_DIM'],
   cf_dim=config['CF_DIM'],
   c_dim=config['C_DIM'],
   z_dim=config['Z_DIM'],
@@ -89,6 +94,10 @@ evaluate_generation(
   # event duration distribution
   should_plot_activity_duration_distributions=evaluation_config['SHOULD_PLOT_ACTIVITY_DURATION_DISTRIBUTIONS'],
   activity_duration_distributions_filter_by_label=evaluation_config['ACTIVITY_DURATION_DISTRIBUTIONS_FILTER_BY_LABEL'],
+
+  # resources
+  should_plot_resource_distribution=evaluation_config['SHOULD_PLOT_RESOURCE_DISTRIBUTION'],
+  should_plot_activity_by_resource_distribution=evaluation_config['SHOULD_PLOT_ACTIVITY_BY_RESOURCE_DISTRIBUTION'],
 
   # trace attribute distributions
   should_plot_trace_attribute_distributions=evaluation_config['SHOULD_PLOT_TRACE_ATTRIBUTE_DISTRIBUTIONS'],
