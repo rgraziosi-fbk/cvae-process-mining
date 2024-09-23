@@ -63,6 +63,7 @@ evaluate_generation(
   should_use_log_4=evaluation_config['SHOULD_USE_LOG_4'],
   should_use_lstm_1=evaluation_config['SHOULD_USE_LSTM_1'],
   should_use_lstm_2=evaluation_config['SHOULD_USE_LSTM_2'],
+  should_use_transformer=evaluation_config['SHOULD_USE_TRANSFORMER'],
 
   should_skip_all_metrics_computation=evaluation_config['SHOULD_SKIP_ALL_METRICS_COMPUTATION'],
   should_plot_boxplots=evaluation_config['SHOULD_PLOT_BOXPLOTS'],

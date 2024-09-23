@@ -32,6 +32,7 @@ def evaluate_generation(
   should_use_log_4=True,
   should_use_lstm_1=True,
   should_use_lstm_2=True,
+  should_use_transformer=True,
 
   should_skip_all_metrics_computation=False,
   should_plot_boxplots=True,
@@ -85,6 +86,7 @@ def evaluate_generation(
     # 'LOG_20': [],
     **({'LSTM_1': []} if should_use_lstm_1 else {}),
     **({'LSTM_2': []} if should_use_lstm_2 else {}),
+    **({'TRANSFORMER': []} if should_use_transformer else {}),
     'VAE': [],
   }
 
@@ -127,6 +129,11 @@ def evaluate_generation(
   if should_use_lstm_2:
     log_paths_per_method['LSTM_2'] = glob.glob(os.path.join(input_path, 'lstm_2') + '/*.csv')
     assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['LSTM_2'])
+
+  # Transformer
+  if should_use_transformer:
+    log_paths_per_method['TRANSFORMER'] = glob.glob(os.path.join(input_path, 'transformer') + '/*.csv')
+    assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['TRANSFORMER'])
 
 
   log_distance_measures = {
@@ -342,7 +349,7 @@ def evaluate_generation(
     print('Plotting resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20']: continue
+      if method in ['LOG_4', 'LOG_20', 'TRANSFORMER']: continue
     
       for i, generated_log_path in enumerate(log_paths):
         plot_resource_distribution(
@@ -357,7 +364,7 @@ def evaluate_generation(
     print('Plotting activity by resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20']: continue
+      if method in ['LOG_4', 'LOG_20', 'TRANSFORMER']: continue
 
       for i, generated_log_path in enumerate(log_paths):
         plot_activity_distribution_by_resource(

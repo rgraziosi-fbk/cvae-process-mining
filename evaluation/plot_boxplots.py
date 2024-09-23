@@ -24,7 +24,7 @@ def plot_boxplots(metrics, output_path='output', output_filename='results.png'):
     ax.set_xticklabels(labels)
     ax.set_title(metric_name)
 
-    possible_colors = ['blue', 'green', 'red']
+    possible_colors = ['blue', 'green', 'red', 'purple', 'brown', 'cyan', 'orange', 'pink', 'gray', 'olive']
     
     for patch, color in zip(boxplot['boxes'], possible_colors[:len(metrics)]):
       patch.set_facecolor(color)
