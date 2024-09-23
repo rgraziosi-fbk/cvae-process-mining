@@ -17,7 +17,9 @@ class EarlyStopper(Stopper):
         print(f'[{result["training_iteration"]}] EarlyStopper: w_kl={result["w_kl"]}, val_loss={result["val_loss"]}; counter={self.counter}, should_stop={self.should_stop}', file=f)
 
     # never stop when not evaluating full loss
-    if not math.isclose(result['w_kl'], 1): return False
+    if not math.isclose(result['w_kl'], 1):
+      self.counter = 0 # also reset counter
+      return False
 
     validation_loss = result['val_loss']
 
