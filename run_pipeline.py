@@ -72,6 +72,8 @@ trainable = partial(train, dataset_info=DATASET_INFO, checkpoint_every=50, devic
 if DEVICE_STR == 'cpu':
   trainable_with_resources = tune.with_resources(trainable, { "cpu": 1 })
 else:
+  import ray
+  ray.init(num_gpus=1)
   trainable_with_resources = tune.with_resources(trainable, { "gpu": 1 })
 
 tuner = tune.Tuner(
