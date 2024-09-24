@@ -201,38 +201,41 @@ def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
       'optimizer_state_dict': optimizer.state_dict(),
     }
     
+    session_report = {
+      'val_loss': val_loss,
+      'loss': train_loss,
+      'rec_loss': train_rec_loss,
+      'kl_loss': train_kl_loss,
+      
+      'w_kl': w_kl[epoch],
+
+      # rec_loss components 
+      'rec_cat_attrs_loss': train_rec_loss_components[0].item(),
+      'rec_num_attrs_loss': train_rec_loss_components[1].item(),
+      'rec_cf_loss': train_rec_loss_components[2].item(),
+      'rec_ts_loss': train_rec_loss_components[3].item(),
+      'rec_res_loss': train_rec_loss_components[4].item(),
+
+      'rec_ts_perc_conformant': ts_perc_conformant,
+    }
+
+    # if it's a checkpoint
+    # Save raytune checkpoint
     with tempfile.TemporaryDirectory() as tmpdir:
-      session_report = {
-        'val_loss': val_loss,
-        'loss': train_loss,
-        'rec_loss': train_rec_loss,
-        'kl_loss': train_kl_loss,
-        
-        'w_kl': w_kl[epoch],
-
-        # rec_loss components 
-        'rec_cat_attrs_loss': train_rec_loss_components[0].item(),
-        'rec_num_attrs_loss': train_rec_loss_components[1].item(),
-        'rec_cf_loss': train_rec_loss_components[2].item(),
-        'rec_ts_loss': train_rec_loss_components[3].item(),
-        'rec_res_loss': train_rec_loss_components[4].item(),
-
-        'rec_ts_perc_conformant': ts_perc_conformant,
-      }
-
-      # if it's a checkpoint
       if (epoch+1) % checkpoint_every == 0:
         experiment_path = get_context().get_trial_dir()
 
-        # Save pytorch checkpoint file
-        checkpoint_path = os.path.join(experiment_path, 'checkpoints', str(epoch))
+        # Save pytorch model
+        checkpoint_path = os.path.join(experiment_path, 'checkpoints')
         os.makedirs(checkpoint_path, exist_ok=True)
-        torch.save(checkpoint_data, os.path.join(checkpoint_path, "checkpoint.pt"))
+        torch.save(checkpoint_data, os.path.join(checkpoint_path, f'checkpoint-{epoch+1}.pt'))
 
-      # ray tune report
-      report(
-        metrics=session_report,
-        checkpoint=Checkpoint.from_directory(tmpdir) if (epoch+1) % checkpoint_every == 0 else None,
-      ) 
+        # Save raytune checkpoint
+        checkpoint = Checkpoint.from_directory(tmpdir)
+      else:
+        checkpoint = None
 
+      # ray tune report  
+      report(metrics=session_report, checkpoint=checkpoint)
+  
   print(f'Finished training with config = {config}')

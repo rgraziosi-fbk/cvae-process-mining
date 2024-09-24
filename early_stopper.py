@@ -1,20 +1,24 @@
+import os
 import math
 from ray.tune import Stopper
 
 class EarlyStopper(Stopper):
-  def __init__(self, patience=1, min_delta=0, debug=False):
+  def __init__(self, patience=1, min_delta=0, output_dir='./output', debug=False):
     self.should_stop = False
     self.patience = patience
     self.min_delta = min_delta
     self.counter = 0
     self.min_validation_loss = float('inf')
 
+    self.output_dir = output_dir
     self.debug = debug
 
   def __call__(self, trial_id, result):
     if self.debug:
-      with open('early-stop-debug.txt', mode='a') as f:
-        print(f'[{result["training_iteration"]}] EarlyStopper: w_kl={result["w_kl"]}, val_loss={result["val_loss"]}; counter={self.counter}, should_stop={self.should_stop}', file=f)
+      debug_file_path = os.path.join(self.output_dir, 'early-stop-debug.txt')
+
+      with open(debug_file_path, mode='a') as f:
+        print(f'[{trial_id}] [{result["training_iteration"]}] EarlyStopper: w_kl={result["w_kl"]}, val_loss={result["val_loss"]}; counter={self.counter}, should_stop={self.should_stop}', file=f)
 
     # never stop when not evaluating full loss
     if not math.isclose(result['w_kl'], 1):

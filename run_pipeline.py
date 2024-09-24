@@ -10,7 +10,7 @@ from ray.air.config import RunConfig, CheckpointConfig
 
 from arg_parser import parse_arguments
 from utils import get_dataset_attributes_info
-from config import DATASET_INFO, MAX_TRACE_LENGTH, MAX_NUM_EPOCHS, NUM_SAMPLES, config
+from config import DATASET_INFO, MAX_TRACE_LENGTH, MAX_NUM_EPOCHS, NUM_SAMPLES, CHECKPOINT_EVERY, config
 from train import train
 from early_stopper import EarlyStopper
 
@@ -64,16 +64,16 @@ config['NUM_EPOCHS'] = MAX_NUM_EPOCHS
 
 scheduler = ASHAScheduler(
   max_t=MAX_NUM_EPOCHS,
-  grace_period=50,
+  grace_period=CHECKPOINT_EVERY,
   reduction_factor=2
 )
 
-trainable = partial(train, dataset_info=DATASET_INFO, checkpoint_every=50, device=DEVICE)
+trainable = partial(train, dataset_info=DATASET_INFO, checkpoint_every=CHECKPOINT_EVERY, device=DEVICE)
 if DEVICE_STR == 'cpu':
   trainable_with_resources = tune.with_resources(trainable, { "cpu": 1 })
 else:
   import ray
-  ray.init(num_gpus=1)
+  ray.init(num_gpus=1) # needed, otherwise RayTune is unable to find GPUs
   trainable_with_resources = tune.with_resources(trainable, { "gpu": 1 })
 
 tuner = tune.Tuner(
@@ -90,6 +90,7 @@ tuner = tune.Tuner(
     stop=EarlyStopper(
       patience=config['EARLY_STOPPING_PATIENCE'],
       min_delta=config['EARLY_STOPPING_MIN_DELTA'],
+      output_dir=os.path.abspath('output'),
       debug=config['EARLY_STOPPING_DEBUG'],
     ),
     checkpoint_config=CheckpointConfig(
@@ -101,7 +102,7 @@ tuner = tune.Tuner(
 # Uncomment if you want to resume past training
 # tuner = tune.Tuner.restore(
 #   os.path.abspath(os.path.join(args.raytune_path, 'train_2023-10-13_09-22-46')),
-#   trainable=partial(train, dataset_info=DATASET_INFO, checkpoint_every=50, device=DEVICE),
+#   trainable=partial(train, dataset_info=DATASET_INFO, checkpoint_every=CHECKPOINT_EVERY, device=DEVICE),
 #   param_space=config,
 #   resume_unfinished=True,
 #   resume_errored=False,
@@ -110,21 +111,31 @@ tuner = tune.Tuner(
 results = tuner.fit()
 
 # Get best checkpoint (i.e. minimum loss value when evaluating full loss function, i.e. w_kl=1)
-best_trial = results.get_best_result('loss', 'min')
+loss_to_check = 'val_loss'
+best_trial = results.get_best_result(loss_to_check, 'min')
 best_checkpoint = None
 
 for checkpoint in best_trial.best_checkpoints:
   path, metrics = checkpoint
-  current_best_loss = best_checkpoint[1]['loss'] if best_checkpoint else math.inf
+  current_best_loss = best_checkpoint[1][loss_to_check] if best_checkpoint else math.inf
   
-  if metrics['w_kl'] == 1 and metrics['loss'] < current_best_loss:
+  if metrics['w_kl'] == 1 and metrics[loss_to_check] < current_best_loss:
     best_checkpoint = checkpoint
 
 best_checkpoint_path = best_checkpoint[0].path
 best_checkpoint_metrics = best_checkpoint[1]
 
+# convert raytune checkpoint number to epoch number
+checkpoint_number = int(best_checkpoint_path[-5:])
+epoch_number = CHECKPOINT_EVERY + checkpoint_number*CHECKPOINT_EVERY
+
+# from best_checkpoint_path, go back one directory
+best_model_path = os.path.abspath(os.path.join(best_checkpoint_path, '..', 'checkpoints'))
+best_model_path = os.path.join(best_model_path, f'checkpoint-{epoch_number}.pt')
+
 # Print best configuration
 for out in [open(os.path.join(args.output_path, 'stats.txt'), mode='w'), sys.stdout]:
-  print(f'Best trial checkpoint: {best_checkpoint_path}', file=out)
   print(f'Best trial config: {best_checkpoint_metrics["config"]}', file=out)
-  print(f'Best trial final validation loss: {best_checkpoint_metrics["loss"]}', file=out)
+  print(f'Best checkpoint: {best_checkpoint_path}', file=out)
+  print(f'Best trial model: {best_model_path}', file=out)
+  print(f'Best trial {loss_to_check}: {best_checkpoint_metrics[loss_to_check]}', file=out)
