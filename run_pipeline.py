@@ -137,5 +137,5 @@ best_model_path = os.path.join(best_model_path, f'checkpoint-{epoch_number}.pt')
 for out in [open(os.path.join(args.output_path, 'stats.txt'), mode='w'), sys.stdout]:
   print(f'Best trial config: {best_checkpoint_metrics["config"]}', file=out)
   print(f'Best checkpoint: {best_checkpoint_path}', file=out)
-  print(f'Best trial model: {best_model_path}', file=out)
+  print(f'Best checkpointed model: {best_model_path}', file=out)
   print(f'Best trial {loss_to_check}: {best_checkpoint_metrics[loss_to_check]}', file=out)

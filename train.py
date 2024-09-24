@@ -1,6 +1,7 @@
 import os
 import torch
 import tempfile
+import math
 from torch.utils.data import DataLoader
 from torch import nn, optim
 import torch.nn.functional as F
@@ -128,13 +129,15 @@ def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
 
   if checkpoint:
     checkpoint_state = checkpoint.to_dict()
+
     start_epoch = checkpoint_state['epoch']
+    current_best_val_loss = checkpoint_state['current_best_val_loss']
     model.load_state_dict(checkpoint_state['model_state_dict'])
     optimizer.load_state_dict(checkpoint_state['optimizer_state_dict'])
   else:
     start_epoch = 0
-
-  start_epoch = 0
+    current_best_val_loss = float('inf')
+    
 
   w_kl = get_weights_cycle_linear(config['NUM_EPOCHS'], n_cycles=config['NUM_KL_ANNEALING_CYCLES'])
 
@@ -194,12 +197,21 @@ def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
 
     val_loss /= len(val_dataset)
 
+    if math.isclose(w_kl[epoch], 1) and val_loss < current_best_val_loss:
+      current_best_val_loss = val_loss
+
     # Checkpoint save
     checkpoint_data = {
       'epoch': epoch,
+      'current_best_val_loss': current_best_val_loss,
       'model_state_dict': model.state_dict(),
       'optimizer_state_dict': optimizer.state_dict(),
     }
+
+    if math.isclose(w_kl[epoch], 1) and val_loss < current_best_val_loss:
+      best_model_path = os.path.join(get_context().get_trial_dir(), f'best-model-epoch-{epoch+1}.pt')
+      torch.save(checkpoint_data, best_model_path)
+      print(f'New best model saved at {best_model_path}')
     
     session_report = {
       'val_loss': val_loss,
