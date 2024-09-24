@@ -11,7 +11,7 @@ from model import VAE
 from train_utils import get_weights_cycle_linear
 from utils import move_to_device
 
-def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
+def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', device='cpu', seed=42):
   # Dataset
   generator = torch.Generator().manual_seed(seed)
   train_dataset = dataset_info['CLASS'](
@@ -138,8 +138,11 @@ def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
     start_epoch = 0
     current_best_val_loss = float('inf')
     
-
   w_kl = get_weights_cycle_linear(config['NUM_EPOCHS'], n_cycles=config['NUM_KL_ANNEALING_CYCLES'])
+
+  # Setup directory for best models
+  best_models_path = os.path.join(output_dir, 'best-models')
+  os.makedirs(best_models_path, exist_ok=True)
 
   for epoch in range(start_epoch, config['NUM_EPOCHS']):
     # Training
@@ -197,7 +200,7 @@ def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
 
     val_loss /= len(val_dataset)
 
-    if math.isclose(w_kl[epoch], 1) and val_loss < current_best_val_loss:
+    if math.isclose(w_kl[epoch], 1.0) and val_loss < current_best_val_loss:
       current_best_val_loss = val_loss
 
     # Checkpoint save
@@ -208,8 +211,8 @@ def train(config, dataset_info={}, checkpoint_every=10, device='cpu', seed=42):
       'optimizer_state_dict': optimizer.state_dict(),
     }
 
-    if math.isclose(w_kl[epoch], 1) and val_loss < current_best_val_loss:
-      best_model_path = os.path.join(get_context().get_trial_dir(), f'best-model-epoch-{epoch+1}.pt')
+    if math.isclose(w_kl[epoch], 1.0) and val_loss < current_best_val_loss:
+      best_model_path = os.path.join(best_models_path, f'best-model-epoch-{epoch+1}.pt')
       torch.save(checkpoint_data, best_model_path)
       print(f'New best model saved at {best_model_path}')
     

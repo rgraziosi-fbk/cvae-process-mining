@@ -68,7 +68,14 @@ scheduler = ASHAScheduler(
   reduction_factor=2
 )
 
-trainable = partial(train, dataset_info=DATASET_INFO, checkpoint_every=CHECKPOINT_EVERY, device=DEVICE)
+trainable = partial(
+  train,
+  dataset_info=DATASET_INFO,
+  output_dir=os.path.abspath('output'),
+  checkpoint_every=CHECKPOINT_EVERY,
+  device=DEVICE,
+)
+
 if DEVICE_STR == 'cpu':
   trainable_with_resources = tune.with_resources(trainable, { "cpu": 1 })
 else:
