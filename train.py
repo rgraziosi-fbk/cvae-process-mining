@@ -137,6 +137,8 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
   else:
     start_epoch = 0
     current_best_val_loss = float('inf')
+
+  should_save_current_model = False
     
   w_kl = get_weights_cycle_linear(config['NUM_EPOCHS'], n_cycles=config['NUM_KL_ANNEALING_CYCLES'])
 
@@ -202,6 +204,7 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
 
     if math.isclose(w_kl[epoch], 1.0) and val_loss < current_best_val_loss:
       current_best_val_loss = val_loss
+      should_save_current_model = True
 
     # Checkpoint save
     checkpoint_data = {
@@ -211,10 +214,11 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
       'optimizer_state_dict': optimizer.state_dict(),
     }
 
-    if math.isclose(w_kl[epoch], 1.0) and val_loss < current_best_val_loss:
+    if should_save_current_model:
       best_model_path = os.path.join(best_models_path, f'best-model-epoch-{epoch+1}.pt')
       torch.save(checkpoint_data, best_model_path)
       print(f'New best model saved at {best_model_path}')
+      should_save_current_model = False
     
     session_report = {
       'val_loss': val_loss,
