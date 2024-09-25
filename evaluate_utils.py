@@ -16,7 +16,6 @@ from evaluation.plot_activity_distribution_by_resource import plot_activity_dist
 from evaluation.plot_trace_attribute_distributions import plot_trace_attribute_distributions
 
 from conformance import discover_declare_model
-
 from utils import save_dict_to_json
 
 plt.set_loglevel('warning')
@@ -276,15 +275,16 @@ def evaluate_generation(
     print('Plotting trace length distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20', 'LSTM_1', 'LSTM_2']: continue
+      if method in ['LOG_4', 'LOG_20']: continue
       
       for i, generated_log_path in enumerate(log_paths):
         plot_trace_length_distribution(
           dataset_info['TEST'],
           generated_log_path,
+          dataset_info=dataset_info,
+          generated_log_trace_key='case:concept:name',
           output_path=os.path.join(output_path, 'trace-length-distributions'),
           output_filename=f'trace-length-distribution-gen-{method}-{i+1}.png',
-          dataset_info=dataset_info,
         )
 
   # Print variant statistics
@@ -349,7 +349,7 @@ def evaluate_generation(
     print('Plotting resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20', 'TRANSFORMER']: continue
+      if method in ['LOG_4', 'LOG_20', 'LSTM_1', 'LSTM_2', 'TRANSFORMER']: continue
     
       for i, generated_log_path in enumerate(log_paths):
         plot_resource_distribution(
@@ -364,7 +364,7 @@ def evaluate_generation(
     print('Plotting activity by resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20', 'TRANSFORMER']: continue
+      if method in ['LOG_4', 'LOG_20', 'LSTM_1', 'LSTM_2', 'TRANSFORMER']: continue
 
       for i, generated_log_path in enumerate(log_paths):
         plot_activity_distribution_by_resource(
