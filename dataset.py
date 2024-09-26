@@ -60,6 +60,10 @@ class GenericDataset(Dataset):
       resources = self.log[resource_key].unique().tolist()
     else:
       resources = copy.deepcopy(resources)
+
+    # cast every item of resources to str
+    resources = [str(r) for r in resources]
+
     resources.sort()
     resources.append(self.EOT_RESOURCE)
     resources.append(self.PADDING_RESOURCE)
@@ -127,6 +131,7 @@ class GenericDataset(Dataset):
       x_res = self.log.iloc[trace][resource_key].tolist()[:self.max_trace_length-1]
       x_res += [self.EOT_RESOURCE]
       x_res += [self.PADDING_RESOURCE] * (self.max_trace_length - len(trace) - 1)
+      x_res = [str(x) for x in x_res]
       x_res = torch.tensor([self.resource2n[r] for r in x_res]).to(torch.int)
       
       # label
