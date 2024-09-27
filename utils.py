@@ -35,7 +35,10 @@ def get_dataset_attributes_info(
   dataset_attributes_info['activities'] = log[activity_key].unique().tolist()
 
   # Compute list of resources
-  dataset_attributes_info['resources'] = log[resource_key].unique().tolist()
+  resources = log[resource_key].unique().tolist()
+  resources = [str(r) for r in resources]
+  resources = list(set(resources))
+  dataset_attributes_info['resources'] = resources
 
   # Compute max trace length
   traces = list(log.groupby(trace_key).groups.values())
