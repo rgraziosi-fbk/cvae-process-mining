@@ -23,6 +23,9 @@ def plot_resource_distribution(original_log_path, generated_log_path, dataset_in
     verbose=False
   )
 
+  original_log[dataset_info['RESOURCE_KEY']] = original_log[dataset_info['RESOURCE_KEY']].astype(str)
+  generated_log[dataset_info['RESOURCE_KEY']] = generated_log[dataset_info['RESOURCE_KEY']].astype(str)
+
   resources = dataset_info['RESOURCES']
 
   original_resource_distribution = original_log[dataset_info['RESOURCE_KEY']].value_counts(normalize=True)
