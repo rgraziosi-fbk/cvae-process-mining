@@ -28,6 +28,7 @@ def evaluate_generation(
   input_path=None,
   output_path=None,
 
+  should_use_vae=True,
   should_use_log_4=True,
   should_use_lstm_1=True,
   should_use_lstm_2=True,
@@ -81,12 +82,12 @@ def evaluate_generation(
   model.eval()
 
   DEFAULT_METHODS_DICT = {
+    **({'VAE': []} if should_use_vae else {}),
     **({'LOG_4': []} if should_use_log_4 else {}),
     # 'LOG_20': [],
     **({'LSTM_1': []} if should_use_lstm_1 else {}),
     **({'LSTM_2': []} if should_use_lstm_2 else {}),
     **({'TRANSFORMER': []} if should_use_transformer else {}),
-    'VAE': [],
   }
 
   if not os.path.exists(output_path):
@@ -122,17 +123,20 @@ def evaluate_generation(
   # LSTM_1
   if should_use_lstm_1:
     log_paths_per_method['LSTM_1'] = glob.glob(os.path.join(input_path, 'lstm_1') + '/*.csv')
-    assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['LSTM_1'])
+    if should_use_vae:
+      assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['LSTM_1'])
 
   # LSTM_2
   if should_use_lstm_2:
     log_paths_per_method['LSTM_2'] = glob.glob(os.path.join(input_path, 'lstm_2') + '/*.csv')
-    assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['LSTM_2'])
+    if should_use_vae:
+      assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['LSTM_2'])
 
   # Transformer
   if should_use_transformer:
     log_paths_per_method['TRANSFORMER'] = glob.glob(os.path.join(input_path, 'transformer') + '/*.csv')
-    assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['TRANSFORMER'])
+    if should_use_vae:
+      assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['TRANSFORMER'])
 
 
   log_distance_measures = {
