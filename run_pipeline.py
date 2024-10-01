@@ -96,7 +96,7 @@ tuner = tune.Tuner(
     storage_path=args.raytune_path,
     stop=EarlyStopper(
       patience=config['EARLY_STOPPING_PATIENCE'],
-      min_delta=config['EARLY_STOPPING_MIN_DELTA'],
+      min_delta_perc=config['EARLY_STOPPING_MIN_DELTA_PERC'],
       output_dir=os.path.abspath('output'),
       debug=config['EARLY_STOPPING_DEBUG'],
     ),
