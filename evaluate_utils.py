@@ -1,6 +1,7 @@
 import os
 import glob
 import copy
+import time
 from matplotlib import pyplot as plt
 
 from evaluation.generate_log import generate_log
@@ -97,6 +98,8 @@ def evaluate_generation(
 
   # VAE
   if should_generate:
+    gen_start_time = time.time()
+
     for i in range(generation_config['NUM_GENERATIONS']):
       print(f'Generating log {i+1}/{generation_config["NUM_GENERATIONS"]}')
       generated_log_path = generate_log(
@@ -107,6 +110,13 @@ def evaluate_generation(
         output_name=f'gen{i+1}'
       )
       log_paths_per_method['VAE'].append(generated_log_path)
+
+    gen_end_time = time.time()
+
+    gen_time = gen_end_time - gen_start_time
+
+    with open(os.path.join(output_path, 'generation_time.txt'), 'w') as f:
+      f.write(str(gen_time))
   else:
     log_paths_per_method['VAE'] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
 
