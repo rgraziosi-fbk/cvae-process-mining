@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils import read_log
@@ -52,6 +53,8 @@ if __name__ == '__main__':
   TIMESTAMP_FROM_START_KEY = 'relative_timestamp_from_start'
   TIMESTAMP_FROM_PREV_KEY = 'relative_timestamp_from_previous_activity'
 
+  start_time = time.time()
+
   log = read_log(DATASET_PATH + DATASET_NAME, verbose=False)
 
   log = add_trace_attr_relative_timestamp_to_first_activity(
@@ -68,6 +71,10 @@ if __name__ == '__main__':
   )
 
   log.to_csv(DATASET_PATH + 'sepsis_cases_1_cts.csv', sep=';')
+
+  end_time = time.time()
+
+  print(f'Execution time: {end_time - start_time} seconds')
 
   import matplotlib.pyplot as plt
   # Plot histogram of new timestamp
