@@ -82,17 +82,14 @@ def generate_log(
       # attrs
       trace_attrs = {}
       for attr in dataset.trace_attributes:
-        # attr_val is highest value for numerical attr, possible values for categorical attr
-        attr_name, attr_type, attr_val = attr.values()
-
-        if attr_type == 'categorical':
-          attrs[attr_name] = torch.argmax(attrs[attr_name], dim=1)
-        elif attr_type == 'numerical':
-          attrs[attr_name] *= attr_val
+        if attr['type'] == 'categorical':
+          attrs[attr['name']] = torch.argmax(attrs[attr['name']], dim=1)
+        elif attr['type'] == 'numerical':
+          attrs[attr['name']] = attr['min_value'] + (attrs[attr['name']] * (attr['max_value'] - attr['min_value'])) # min-max denormalization
         else:
-          raise Exception(f'Unknown trace attribute type: {attr_type}')
+          raise Exception(f'Unknown trace attribute type: {attr["type"]}')
         
-        trace_attrs[attr_name] = attrs[attr_name]
+        trace_attrs[attr['name']] = attrs[attr['name']]
       
       # acts
       acts = torch.argmax(acts, dim=2)

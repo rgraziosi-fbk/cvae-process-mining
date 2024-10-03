@@ -52,17 +52,14 @@ def get_dataset_attributes_info(
     possible_values.sort()
     is_numerical = all([isinstance(v, (int, float, complex)) for v in possible_values])
 
-    # If attribute is numerical, get the highest possible value
-    if is_numerical:
-      highest_value = max(possible_values)
-
     trace_attribute_info = {
       'name': trace_attr,
       'type': 'numerical' if is_numerical else 'categorical',
     }
 
     if is_numerical:
-      trace_attribute_info['highest_value'] = highest_value
+      trace_attribute_info['min_value'] = min(possible_values)
+      trace_attribute_info['max_value'] = max(possible_values)
     else:
       trace_attribute_info['possible_values'] = possible_values
 

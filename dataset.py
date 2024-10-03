@@ -107,7 +107,7 @@ class GenericDataset(Dataset):
           attr = self.s2i[trace_attr['name']][attr] # convert attribute to index
           attr = torch.tensor(attr, dtype=torch.int64)
         elif trace_attr['type'] == 'numerical':
-          attr = attr / trace_attr['highest_value']
+          attr = (attr - trace_attr['min_value']) / (trace_attr['max_value'] / trace_attr['min_value']) # min-max normalization
           attr = torch.tensor(attr, dtype=torch.float32)
         else:
           raise Exception(f'Unknown trace attribute type: {trace_attr["type"]}')
