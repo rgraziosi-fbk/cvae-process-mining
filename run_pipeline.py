@@ -62,6 +62,14 @@ DATASET_INFO['TRACE_ATTRIBUTES'] = dataset_attributes_info['trace_attributes']
 config['C_DIM'] = DATASET_INFO['NUM_LABELS'] if MODEL_TYPE == 'cvae' else 0
 config['NUM_EPOCHS'] = MAX_NUM_EPOCHS
 
+# Print some info
+for out in [open(os.path.join(args.output_path, 'info.txt'), mode='w'), sys.stdout]:
+  print(f'Max trace length: {DATASET_INFO["MAX_TRACE_LENGTH"]}', file=out)
+  print(f'Activities ({len(DATASET_INFO["ACTIVITIES"])}): {DATASET_INFO["ACTIVITIES"]}', file=out)
+  print(f'Resources ({len(DATASET_INFO["RESOURCES"])}): {DATASET_INFO["RESOURCES"]}', file=out)
+  print(f'Trace attributes: {DATASET_INFO["TRACE_ATTRIBUTES"]}', file=out)
+
+
 scheduler = ASHAScheduler(
   max_t=MAX_NUM_EPOCHS,
   grace_period=CHECKPOINT_EVERY,
