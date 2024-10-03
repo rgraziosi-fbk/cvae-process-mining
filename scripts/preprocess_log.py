@@ -46,8 +46,9 @@ def add_relative_timestamp_between_activities(
 
 
 if __name__ == '__main__':
-  DATASET_PATH = './datasets/'
-  DATASET_NAME = 'sepsis_cases_1.csv'
+  DATASET = 'sepsis'
+  DATASET_PATH = f'./datasets/{DATASET}/'
+  DATASET_NAME = f'{DATASET}.csv'
   DATASET_TRACE_KEY = 'Case ID'
   DATASET_TIMESTAMP_KEY = 'time:timestamp'
   TIMESTAMP_FROM_START_KEY = 'relative_timestamp_from_start'
@@ -55,7 +56,7 @@ if __name__ == '__main__':
 
   start_time = time.time()
 
-  log = read_log(DATASET_PATH + DATASET_NAME, verbose=False)
+  log = read_log(os.path.join(DATASET_PATH, DATASET_NAME), verbose=False)
 
   log = add_trace_attr_relative_timestamp_to_first_activity(
     log,
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     custom_timestamp_key=TIMESTAMP_FROM_PREV_KEY,
   )
 
-  log.to_csv(DATASET_PATH + 'sepsis_cases_1_cts.csv', sep=';')
+  log.to_csv(os.path.join(DATASET_PATH,  f'{DATASET}_pp.csv'), sep=';', index=False)
 
   end_time = time.time()
 
