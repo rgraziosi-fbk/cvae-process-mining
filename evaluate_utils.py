@@ -232,6 +232,7 @@ def evaluate_generation(
               filter_log_by=filter_log_by,
               gen_log_trace_key=dataset_info['TRACE_KEY'] if method in ['LOG_4', 'LOG_20'] else 'case:concept:name',
               gen_log_activity_key=dataset_info['ACTIVITY_KEY'] if method in ['LOG_4', 'LOG_20'] else 'concept:name',
+              gen_resource_key=dataset_info['RESOURCE_KEY'] if method in ['LOG_4', 'LOG_20'] else 'org:resource',
             )
           )
 

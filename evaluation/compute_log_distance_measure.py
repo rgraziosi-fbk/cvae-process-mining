@@ -11,6 +11,7 @@ from log_distance_measures.circadian_event_distribution import circadian_event_d
 from log_distance_measures.relative_event_distribution import relative_event_distribution_distance
 from log_distance_measures.work_in_progress import work_in_progress_distance
 from log_distance_measures.cycle_time_distribution import cycle_time_distribution_distance
+from log_distance_measures.circadian_workforce_distribution import circadian_workforce_distribution_distance
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -24,7 +25,8 @@ def compute_log_distance_measure(
   filter_log_by=None,
   gen_log_trace_key='case:concept:name',
   gen_log_activity_key='concept:name',
-  gen_log_timestamp_key='time:timestamp'
+  gen_log_timestamp_key='time:timestamp',
+  gen_resource_key='org:resource',
 ):
   original_log = read_log(original_log_path, separator=dataset_info['CSV_SEPARATOR'], verbose=False)
   generated_log = read_log(generated_log_path, separator=dataset_info['CSV_SEPARATOR'], verbose=False)
@@ -38,13 +40,15 @@ def compute_log_distance_measure(
     case=dataset_info['TRACE_KEY'],
     activity=dataset_info['ACTIVITY_KEY'],
     start_time='time:timestamp',
-    end_time='time:timestamp'
+    end_time='time:timestamp',
+    resource=dataset_info['RESOURCE_KEY'],
   )
   generated_log_ids = EventLogIDs(
     case=gen_log_trace_key,
     activity=gen_log_activity_key,
     start_time=gen_log_timestamp_key,
-    end_time=gen_log_timestamp_key
+    end_time=gen_log_timestamp_key,
+    resource=gen_resource_key,
   )
 
   generated_log[gen_log_timestamp_key] = generated_log[gen_log_timestamp_key].dt.tz_localize(None)
@@ -128,4 +132,12 @@ def compute_log_distance_measure(
       generated_log,
       generated_log_ids,
       bin_size=pd.Timedelta(hours=1),
+    )
+  
+  if measure == 'cwd':
+    return circadian_workforce_distribution_distance(
+      original_log,
+      original_log_ids,
+      generated_log,
+      generated_log_ids,
     )
