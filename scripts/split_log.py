@@ -67,9 +67,9 @@ def split_temporal(log_path, log_name, output_path, split_perc=[0.7, 0.1, 0.12],
     pm4py.write_xes(val, os.path.join(output_path, f'{log_name}_VAL.xes'))
     pm4py.write_xes(test, os.path.join(output_path, f'{log_name}_TEST.xes'))
   else:
-    train.to_csv(os.path.join(output_path, f'{log_name}_TRAIN.csv'), sep=csv_sep)
-    val.to_csv(os.path.join(output_path, f'{log_name}_VAL.csv'), sep=csv_sep)
-    test.to_csv(os.path.join(output_path, f'{log_name}_TEST.csv'), sep=csv_sep)
+    train.to_csv(os.path.join(output_path, f'{log_name}_TRAIN.csv'), sep=csv_sep, index=False)
+    val.to_csv(os.path.join(output_path, f'{log_name}_VAL.csv'), sep=csv_sep, index=False)
+    test.to_csv(os.path.join(output_path, f'{log_name}_TEST.csv'), sep=csv_sep, index=False)
 
 
 def split_temporal_arbitrary_num_splits(log_path, log_name, output_path, split_perc, csv_sep=';', case_id_key='case:concept:name', timestamp_key='time:timestamp'):
@@ -144,10 +144,10 @@ def split_temporal_fixed_split_size(log_path, log_name, output_path, num_splits,
 
 if __name__ == '__main__':
   split_temporal(
-    os.path.join('datasets', 'sepsis_cases_1_custom.csv'),
-    log_name='sepsis_cases_1_custom',
-    output_path=os.path.join('datasets', 'sepsis_cases_1_custom'),
-    split_perc=[0.7, 0.1, 0.2],
+    os.path.join('datasets', 'sepsis', 'sepsis.csv'),
+    log_name='sepsis',
+    output_path=os.path.join('datasets', 'sepsis'),
+    split_perc=[0.6, 0.2, 0.2],
     case_id_key='Case ID',
   )
 
