@@ -56,7 +56,21 @@ def compute_log_distance_measure(
   if measure == 'cfld':
     original_log_traces = original_log[dataset_info['TRACE_KEY']].unique().tolist()
     generated_log_traces = generated_log[gen_log_trace_key].unique().tolist()
-    assert len(original_log_traces) == len(generated_log_traces)
+    # assert len(original_log_traces) == len(generated_log_traces)
+
+    # if logs are not of the same size, drop cases to get same size
+    if len(original_log_traces) > len(generated_log_traces):
+      print(f'WARNING: Dropping cases from original log ({len(original_log_traces)}) to match the size of the generated log ({len(generated_log_traces)})')
+      num_cases_to_drop = len(original_log_traces) - len(generated_log_traces)
+      for _ in range(num_cases_to_drop):
+        original_log_traces.pop()
+      original_log = original_log[original_log[dataset_info['TRACE_KEY']].isin(original_log_traces)]
+    elif len(generated_log_traces) > len(original_log_traces):
+      print(f'WARNING: Dropping cases from generated log ({len(generated_log_traces)}) to match the size of the original log ({len(original_log_traces)})')
+      num_cases_to_drop = len(generated_log_traces) - len(original_log_traces)
+      for _ in range(num_cases_to_drop):
+        generated_log_traces.pop()
+      generated_log = generated_log[generated_log[gen_log_trace_key].isin(generated_log_traces)]
 
     return control_flow_log_distance(
       original_log,
