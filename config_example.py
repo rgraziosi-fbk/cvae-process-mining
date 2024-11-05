@@ -5,10 +5,15 @@ from dataset import GenericDataset
 
 # Dataset
 # bpic2012_a, bpic2012_b, sepsis, traffic_fines
-DATASET_NAME = 'sepsis_new'
+DATASET_NAME = 'bpic2012_b'
 
 # Used values in the paper: bpic2012_a|b = 100, sepsis = 50, traffic_fines = 20
-MAX_TRACE_LENGTH = 50
+if DATASET_NAME == 'sepsis':
+  MAX_TRACE_LENGTH = 50
+elif DATASET_NAME == 'bpic2012_a' or DATASET_NAME == 'bpic2012_b':
+  MAX_TRACE_LENGTH = 100
+elif DATASET_NAME == 'traffic_fines':
+  MAX_TRACE_LENGTH = 20
 
 # Trace attributes to consider for each dataset
 TRACE_ATTRIBUTES_BY_DATASET = {
@@ -73,24 +78,26 @@ config = {
 
 # Evaluation config
 evaluation_config = {
-  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/current_esperimenti/sepsis/20k-epochs/best-models/best-model-epoch-4492.pt',
+  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/cvae/bpic2012_b/training_output/best-models/best-model-epoch-1269.pt',
   'INPUT_PATH': os.path.abspath('input'),
   'OUTPUT_PATH': os.path.abspath('output'),
   
-  'SHOULD_GENERATE': True,
+  'SHOULD_GENERATE': False,
   'GENERATION': {
     'NUM_GENERATIONS': 10,
     'LABELS': {
-      'deviant': 23,
-      'regular': 134,
+      'deviant': 154,
+      'regular': 783,
     },
   },
 
-  'SHOULD_USE_VAE': True,
-  'SHOULD_USE_LOG_4': True,
+  'SHOULD_USE_CVAE': True,
+  'SHOULD_USE_LOG_3': True,
   'SHOULD_USE_LSTM_1': True,
-  'SHOULD_USE_LSTM_2': True,
-  'SHOULD_USE_TRANSFORMER': True,
+  'SHOULD_USE_LSTM_2': False,
+  'SHOULD_USE_TRANSFORMER_1': True,
+  'SHOULD_USE_TRANSFORMER_2': True,
+  'SHOULD_USE_PROCESSGAN_1': True,
 
   # control every metric computation
   'SHOULD_SKIP_ALL_METRICS_COMPUTATION': False,
@@ -131,8 +138,8 @@ evaluation_config = {
   # trace attribute distributions
   'SHOULD_PLOT_TRACE_ATTRIBUTE_DISTRIBUTIONS': True,
   'TRACE_ATTRIBUTES': {
-    # 'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b
-    'Age': [i for i in range(30, 90, 5)], # sepsis
+    'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b
+    # 'Age': [i for i in range(30, 90, 5)], # sepsis
     # 'amount': [i for i in range(0, 200, 20)], # traffic_fines
   },
 

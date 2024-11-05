@@ -60,11 +60,13 @@ evaluate_generation(
   input_path=evaluation_config['INPUT_PATH'],
   output_path=evaluation_config['OUTPUT_PATH'],
 
-  should_use_vae=evaluation_config['SHOULD_USE_VAE'],
-  should_use_log_4=evaluation_config['SHOULD_USE_LOG_4'],
+  should_use_cvae=evaluation_config['SHOULD_USE_CVAE'],
+  should_use_log_3=evaluation_config['SHOULD_USE_LOG_3'],
   should_use_lstm_1=evaluation_config['SHOULD_USE_LSTM_1'],
   should_use_lstm_2=evaluation_config['SHOULD_USE_LSTM_2'],
-  should_use_transformer=evaluation_config['SHOULD_USE_TRANSFORMER'],
+  should_use_transformer_1=evaluation_config['SHOULD_USE_TRANSFORMER_1'],
+  should_use_transformer_2=evaluation_config['SHOULD_USE_TRANSFORMER_2'],
+  should_use_processgan_1=evaluation_config['SHOULD_USE_PROCESSGAN_1'],
 
   should_skip_all_metrics_computation=evaluation_config['SHOULD_SKIP_ALL_METRICS_COMPUTATION'],
   should_plot_boxplots=evaluation_config['SHOULD_PLOT_BOXPLOTS'],

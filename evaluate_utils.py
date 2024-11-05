@@ -21,6 +21,14 @@ from utils import save_dict_to_json
 
 plt.set_loglevel('warning')
 
+LOG_3_KEY = 'LOG_3'
+CVAE_KEY = 'CVAE'
+LSTM_1_KEY = 'LSTM_1'
+LSTM_2_KEY = 'LSTM_2'
+TRANSFORMER_1_KEY = 'PT_1'
+TRANSFORMER_2_KEY = 'PT_2'
+PROCESSGAN_1_KEY = 'PG_1'
+
 def evaluate_generation(
   model,
   should_generate=True,
@@ -29,11 +37,13 @@ def evaluate_generation(
   input_path=None,
   output_path=None,
 
-  should_use_vae=True,
-  should_use_log_4=True,
+  should_use_cvae=True,
+  should_use_log_3=True,
   should_use_lstm_1=True,
   should_use_lstm_2=True,
-  should_use_transformer=True,
+  should_use_transformer_1=True,
+  should_use_transformer_2=True,
+  should_use_processgan_1=True,
 
   should_skip_all_metrics_computation=False,
   should_plot_boxplots=True,
@@ -83,12 +93,13 @@ def evaluate_generation(
   model.eval()
 
   DEFAULT_METHODS_DICT = {
-    **({'VAE': []} if should_use_vae else {}),
-    **({'LOG_4': []} if should_use_log_4 else {}),
-    # 'LOG_20': [],
-    **({'LSTM_1': []} if should_use_lstm_1 else {}),
-    **({'LSTM_2': []} if should_use_lstm_2 else {}),
-    **({'TRANSFORMER': []} if should_use_transformer else {}),
+    **({LOG_3_KEY: []} if should_use_log_3 else {}),
+    **({CVAE_KEY: []} if should_use_cvae else {}),
+    **({LSTM_1_KEY: []} if should_use_lstm_1 else {}),
+    **({LSTM_2_KEY: []} if should_use_lstm_2 else {}),
+    **({TRANSFORMER_1_KEY: []} if should_use_transformer_1 else {}),
+    **({TRANSFORMER_2_KEY: []} if should_use_transformer_2 else {}),
+    **({PROCESSGAN_1_KEY: []} if should_use_processgan_1 else {}),
   }
 
   if not os.path.exists(output_path):
@@ -109,7 +120,7 @@ def evaluate_generation(
         output_path=os.path.join(output_path, 'gen'),
         output_name=f'gen{i+1}'
       )
-      log_paths_per_method['VAE'].append(generated_log_path)
+      log_paths_per_method[CVAE_KEY].append(generated_log_path)
 
     gen_end_time = time.time()
 
@@ -118,35 +129,44 @@ def evaluate_generation(
     with open(os.path.join(output_path, 'generation_time.txt'), 'w') as f:
       f.write(str(gen_time))
   else:
-    log_paths_per_method['VAE'] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
+    log_paths_per_method[CVAE_KEY] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
 
   
   # LOG_4
-  if should_use_log_4:
-    log_paths_per_method['LOG_4'] = glob.glob(os.path.join(input_path, 'log_4') + '/*.csv')
-    assert len(log_paths_per_method['LOG_4']) == 4
-
-  # LOG_20
-  # log_paths_per_method['LOG_20'] = glob.glob(os.path.join(input_path, 'log_20') + '/*.csv')
-  # assert len(log_paths_per_method['LOG_20']) == 20
+  if should_use_log_3:
+    log_paths_per_method[LOG_3_KEY] = glob.glob(os.path.join(input_path, 'log_3') + '/*.csv')
+    assert len(log_paths_per_method[LOG_3_KEY]) == 3
   
   # LSTM_1
   if should_use_lstm_1:
-    log_paths_per_method['LSTM_1'] = glob.glob(os.path.join(input_path, 'lstm_1') + '/*.csv')
-    if should_use_vae:
-      assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['LSTM_1'])
+    log_paths_per_method[LSTM_1_KEY] = glob.glob(os.path.join(input_path, 'lstm_1') + '/*.csv')
+    if should_use_cvae:
+      assert len(log_paths_per_method[CVAE_KEY]) == len(log_paths_per_method[LSTM_1_KEY])
 
   # LSTM_2
   if should_use_lstm_2:
-    log_paths_per_method['LSTM_2'] = glob.glob(os.path.join(input_path, 'lstm_2') + '/*.csv')
-    if should_use_vae:
-      assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['LSTM_2'])
+    log_paths_per_method[LSTM_2_KEY] = glob.glob(os.path.join(input_path, 'lstm_2') + '/*.csv')
+    if should_use_cvae:
+      assert len(log_paths_per_method[CVAE_KEY]) == len(log_paths_per_method[LSTM_2_KEY])
 
   # Transformer
-  if should_use_transformer:
-    log_paths_per_method['TRANSFORMER'] = glob.glob(os.path.join(input_path, 'transformer') + '/*.csv')
-    if should_use_vae:
-      assert len(log_paths_per_method['VAE']) == len(log_paths_per_method['TRANSFORMER'])
+  if should_use_transformer_1:
+    log_paths_per_method[TRANSFORMER_1_KEY] = glob.glob(os.path.join(input_path, 'transformer_1') + '/*.csv')
+    if should_use_cvae:
+      assert len(log_paths_per_method[CVAE_KEY]) == len(log_paths_per_method[TRANSFORMER_1_KEY])
+
+  # Transformer_2
+  if should_use_transformer_2:
+    log_paths_per_method[TRANSFORMER_2_KEY] = glob.glob(os.path.join(input_path, 'transformer_2') + '/*.csv')
+    if should_use_cvae:
+      assert len(log_paths_per_method[CVAE_KEY]) == len(log_paths_per_method[TRANSFORMER_2_KEY])
+
+  # ProcessGAN
+  # It generates a log of the size of the train log. So, given a 60/20/20 split, we expect
+  # to have 3 generated logs to compare to the test log
+  if should_use_processgan_1:
+    log_paths_per_method[PROCESSGAN_1_KEY] = glob.glob(os.path.join(input_path, 'processgan_1') + '/*.csv')
+    assert len(log_paths_per_method[PROCESSGAN_1_KEY]) == 3 or len(log_paths_per_method[PROCESSGAN_1_KEY]) == 4
 
 
   log_distance_measures = {
@@ -179,8 +199,8 @@ def evaluate_generation(
       )
 
       for method, log_paths in log_paths_per_method.items():
-        # we cannot compute filtered metrics for lstm_1 method
-        if filter_log_by is not None and method == 'LSTM_1': continue
+        # we cannot compute filtered metrics for methods that do not generate labels
+        if filter_log_by is not None and method in [LSTM_1_KEY, TRANSFORMER_1_KEY, PROCESSGAN_1_KEY]: continue
 
         for i, log_path in enumerate(log_paths):
           try:
@@ -219,8 +239,8 @@ def evaluate_generation(
       measure_results = copy.deepcopy(DEFAULT_METHODS_DICT)
 
       for method, log_paths in log_paths_per_method.items():
-        # we cannot compute filtered metrics for lstm_1 method
-        if filter_log_by is not None and method == 'LSTM_1': continue
+        # we cannot compute filtered metrics for methods that do not generate labels
+        if filter_log_by is not None and method in [LSTM_1_KEY, TRANSFORMER_1_KEY, PROCESSGAN_1_KEY]: continue
 
         for i, log_path in enumerate(log_paths):
           measure_results[method].append(
@@ -230,9 +250,9 @@ def evaluate_generation(
               dataset_info,
               measure=measure_to_compute,
               filter_log_by=filter_log_by,
-              gen_log_trace_key=dataset_info['TRACE_KEY'] if method in ['LOG_4', 'LOG_20'] else 'case:concept:name',
-              gen_log_activity_key=dataset_info['ACTIVITY_KEY'] if method in ['LOG_4', 'LOG_20'] else 'concept:name',
-              gen_resource_key=dataset_info['RESOURCE_KEY'] if method in ['LOG_4', 'LOG_20'] else 'org:resource',
+              gen_log_trace_key=dataset_info['TRACE_KEY'] if method in [LOG_3_KEY] else 'case:concept:name',
+              gen_log_activity_key=dataset_info['ACTIVITY_KEY'] if method in [LOG_3_KEY] else 'concept:name',
+              gen_resource_key=dataset_info['RESOURCE_KEY'] if method in [LOG_3_KEY] else 'org:resource',
             )
           )
 
@@ -264,7 +284,7 @@ def evaluate_generation(
     print('Plotting t-SNE...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20', 'LSTM_1', 'LSTM_2']: continue
+      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY]: continue
 
       for i, generated_log_path in enumerate(log_paths):
         for consider_timestamps in [True, False]:
@@ -290,7 +310,7 @@ def evaluate_generation(
     print('Plotting trace length distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20']: continue
+      if method in [LOG_3_KEY]: continue
       
       for i, generated_log_path in enumerate(log_paths):
         plot_trace_length_distribution(
@@ -313,7 +333,7 @@ def evaluate_generation(
     variant_stats_gen = copy.deepcopy(DEFAULT_METHODS_DICT)
 
     for method, generated_log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20']: continue
+      if method in [LOG_3_KEY]: continue
 
       for i, generated_log_path in enumerate(generated_log_paths):
         variant_stats_gen[method].append(
@@ -329,7 +349,7 @@ def evaluate_generation(
     # Compute average variant stats
     variant_stats_avg = copy.deepcopy(DEFAULT_METHODS_DICT)
     for method, variant_stats in variant_stats_gen.items():
-      if method in ['LOG_4', 'LOG_20']: continue
+      if method in [LOG_3_KEY]: continue
 
       variant_stats_avg[method] = {
         'num_generated_variants': sum([stats['num_generated_variants'] for stats in variant_stats]) / len(variant_stats),
@@ -345,7 +365,7 @@ def evaluate_generation(
     print('Plotting activity duration distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20']: continue
+      if method in [LOG_3_KEY]: continue
 
       for i, generated_log_path in enumerate(log_paths):
         plot_activity_duration_distributions(
@@ -364,7 +384,7 @@ def evaluate_generation(
     print('Plotting resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20', 'LSTM_1', 'LSTM_2', 'TRANSFORMER']: continue
+      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY]: continue
     
       for i, generated_log_path in enumerate(log_paths):
         plot_resource_distribution(
@@ -379,7 +399,7 @@ def evaluate_generation(
     print('Plotting activity by resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in ['LOG_4', 'LOG_20', 'LSTM_1', 'LSTM_2', 'TRANSFORMER']: continue
+      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY]: continue
 
       for i, generated_log_path in enumerate(log_paths):
         plot_activity_distribution_by_resource(
@@ -394,7 +414,7 @@ def evaluate_generation(
   if should_plot_trace_attribute_distributions:
     print('Plotting trace attribute distributions...')
       
-    for i, generated_log_path in enumerate(log_paths_per_method['VAE']):
+    for i, generated_log_path in enumerate(log_paths_per_method[CVAE_KEY]):
       plot_trace_attribute_distributions(
         dataset_info['TEST'],
         generated_log_path,
