@@ -4,16 +4,18 @@ from ray import tune
 from dataset import GenericDataset
 
 # Dataset
-# bpic2012_a, bpic2012_b, sepsis, traffic_fines
-DATASET_NAME = 'bpic2012_b'
+# bpic2012_a, bpic2012_b, bpic2012_c, sepsis, traffic_fines
+DATASET_NAME = 'sepsis'
 
 # Used values in the paper: bpic2012_a|b = 100, sepsis = 50, traffic_fines = 20
 if DATASET_NAME == 'sepsis':
   MAX_TRACE_LENGTH = 50
-elif DATASET_NAME == 'bpic2012_a' or DATASET_NAME == 'bpic2012_b':
+elif DATASET_NAME in ['bpic2012_a', 'bpic2012_b', 'bpic2012_c']:
   MAX_TRACE_LENGTH = 100
 elif DATASET_NAME == 'traffic_fines':
   MAX_TRACE_LENGTH = 20
+
+NUM_LABELS = 4 if DATASET_NAME == 'bpic2012_c' else 2
 
 # Trace attributes to consider for each dataset
 TRACE_ATTRIBUTES_BY_DATASET = {
@@ -22,6 +24,10 @@ TRACE_ATTRIBUTES_BY_DATASET = {
   ],
 
   'bpic2012_b': [
+    'AMOUNT_REQ',
+  ],
+
+  'bpic2012_c': [
     'AMOUNT_REQ',
   ],
 
@@ -43,7 +49,7 @@ DATASET_INFO = {
   'TEST': os.path.abspath(os.path.join('datasets', DATASET_NAME, f'{DATASET_NAME}_TEST.csv')),
   'FULL': os.path.abspath(os.path.join('datasets', DATASET_NAME, f'{DATASET_NAME}.csv')),
   'CSV_SEPARATOR': ';',
-  'NUM_LABELS': 2,
+  'NUM_LABELS': NUM_LABELS,
   'TRACE_ATTRIBUTE_KEYS': ['relative_timestamp_from_start'] + TRACE_ATTRIBUTES_BY_DATASET[DATASET_NAME],
   'ACTIVITY_KEY': 'Activity',
   'TIMESTAMP_KEY': 'relative_timestamp_from_previous_activity',
@@ -78,7 +84,7 @@ config = {
 
 # Evaluation config
 evaluation_config = {
-  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/cvae/bpic2012_b/training_output/best-models/best-model-epoch-1269.pt',
+  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/cvae/sepsis/training_output/best-models/best-model-epoch-4461.pt',
   'INPUT_PATH': os.path.abspath('input'),
   'OUTPUT_PATH': os.path.abspath('output'),
   
@@ -94,7 +100,7 @@ evaluation_config = {
   'SHOULD_USE_CVAE': True,
   'SHOULD_USE_LOG_3': True,
   'SHOULD_USE_LSTM_1': True,
-  'SHOULD_USE_LSTM_2': False,
+  'SHOULD_USE_LSTM_2': True,
   'SHOULD_USE_TRANSFORMER_1': True,
   'SHOULD_USE_TRANSFORMER_2': True,
   'SHOULD_USE_PROCESSGAN_1': True,
@@ -111,7 +117,7 @@ evaluation_config = {
   'CONFORMANCE_MAX_DECLARE_CARDINALITY': 2,
 
   # log distance measures
-  'LOG_DISTANCE_MEASURES_TO_COMPUTE': ['cfld', 'ngram_2', 'red', 'ctd'],
+  'LOG_DISTANCE_MEASURES_TO_COMPUTE': ['cfld', 'ngram_2', 'ngram_3', 'red', 'ctd'],
   'LOG_DISTANCE_MEASURES_ALSO_COMPUTE_FILTERED_BY': [],
 
   # t-sne plot
@@ -138,8 +144,8 @@ evaluation_config = {
   # trace attribute distributions
   'SHOULD_PLOT_TRACE_ATTRIBUTE_DISTRIBUTIONS': True,
   'TRACE_ATTRIBUTES': {
-    'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b
-    # 'Age': [i for i in range(30, 90, 5)], # sepsis
+    # 'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b|c
+    'Age': [i for i in range(30, 90, 5)], # sepsis
     # 'amount': [i for i in range(0, 200, 20)], # traffic_fines
   },
 
