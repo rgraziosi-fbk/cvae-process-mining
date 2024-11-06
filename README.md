@@ -1,6 +1,10 @@
-# Generating the traces you need: a conditional generative model for Process Mining data
+# Generating the Traces You Need: A Conditional Generative Model for Process Mining Data
 
-Code and additional resources for paper "Generating the traces you need: a conditional generative model for Process Mining data".
+Code and additional resources for paper "Generating the Traces You Need: A Conditional Generative Model for Process Mining Data".
+
+## Paper
+
+[Link to arXiv](https://arxiv.org/abs/2411.02131).
 
 ## Additional material
 
@@ -26,3 +30,21 @@ Datasets provided in the repository have already been preprocessed and splitted.
 
 - `scripts/preprocess_log.py` in order to transform timestamps to relative timestamps to be fed to CVAE
 - `scripts/split_log.py` in order to split the preprocessed log into train, val, test
+
+## How to cite
+
+R. Graziosi et al., "Generating the Traces You Need: A Conditional Generative Model for Process Mining Data," 2024 6th International Conference on Process Mining (ICPM), Kgs. Lyngby, Denmark, 2024, pp. 25-32, doi: 10.1109/ICPM63005.2024.10680621. keywords: {Process mining;Measurement;Deep learning;Adaptation models;Analytical models;Process control;Data models;Process Mining;Deep Learning;Generative AI;Conditional models},
+
+
+```
+@INPROCEEDINGS{10680621,
+  author={Graziosi, Riccardo and Ronzani, Massimiliano and Buliga, Andrei and Di Francescomarino, Chiara and Folino, Francesco and Ghidini, Chiara and Meneghello, Francesca and Pontieri, Luigi},
+  booktitle={2024 6th International Conference on Process Mining (ICPM)}, 
+  title={Generating the Traces You Need: A Conditional Generative Model for Process Mining Data}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={25-32},
+  keywords={Process mining;Measurement;Deep learning;Adaptation models;Analytical models;Process control;Data models;Process Mining;Deep Learning;Generative AI;Conditional models},
+  doi={10.1109/ICPM63005.2024.10680621}}
+```
