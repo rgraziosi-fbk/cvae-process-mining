@@ -54,6 +54,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 # Evaluate model
 evaluate_generation(
   model,
+  evaluation_config['LOG_NAME'],
   should_generate=evaluation_config['SHOULD_GENERATE'],
   generation_config=evaluation_config['GENERATION'],
   dataset_info=DATASET_INFO,
@@ -68,6 +69,10 @@ evaluate_generation(
   should_use_transformer_2=evaluation_config['SHOULD_USE_TRANSFORMER_2'],
   should_use_processgan_1=evaluation_config['SHOULD_USE_PROCESSGAN_1'],
 
+  # recompute labels on generated data
+  should_recompute_labels_on_generated_data=evaluation_config['SHOULD_RECOMPUTE_LABELS_ON_GENERATED_DATA'],
+
+  # control every metric computation
   should_skip_all_metrics_computation=evaluation_config['SHOULD_SKIP_ALL_METRICS_COMPUTATION'],
   should_plot_boxplots=evaluation_config['SHOULD_PLOT_BOXPLOTS'],
 

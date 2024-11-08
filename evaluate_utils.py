@@ -5,6 +5,7 @@ import time
 from matplotlib import pyplot as plt
 
 from evaluation.generate_log import generate_log
+from evaluation.recompute_labels_on_generated_data import recompute_labels_on_generated_data
 from evaluation.compute_conformance import compute_conformance
 from evaluation.compute_log_distance_measure import compute_log_distance_measure
 from evaluation.plot_boxplots import plot_boxplots
@@ -31,6 +32,7 @@ PROCESSGAN_1_KEY = 'PG_1'
 
 def evaluate_generation(
   model,
+  log_name,
   should_generate=True,
   generation_config={},
   dataset_info={},
@@ -44,6 +46,8 @@ def evaluate_generation(
   should_use_transformer_1=True,
   should_use_transformer_2=True,
   should_use_processgan_1=True,
+
+  should_recompute_labels_on_generated_data=True,
 
   should_skip_all_metrics_computation=False,
   should_plot_boxplots=True,
@@ -131,7 +135,6 @@ def evaluate_generation(
   else:
     log_paths_per_method[CVAE_KEY] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
 
-  
   # LOG_4
   if should_use_log_3:
     log_paths_per_method[LOG_3_KEY] = glob.glob(os.path.join(input_path, 'log_3') + '/*.csv')
@@ -168,7 +171,20 @@ def evaluate_generation(
     log_paths_per_method[PROCESSGAN_1_KEY] = glob.glob(os.path.join(input_path, 'processgan_1') + '/*.csv')
     assert len(log_paths_per_method[PROCESSGAN_1_KEY]) == 3 or len(log_paths_per_method[PROCESSGAN_1_KEY]) == 4
 
+  # Recompute labels on generated data
+  if should_recompute_labels_on_generated_data:
+    if not os.path.exists(os.path.join(output_path, 'recomputed-labels')):
+      os.makedirs(os.path.join(output_path, 'recomputed-labels'))
 
+    for method in DEFAULT_METHODS_DICT.keys():
+      if method in ['LOG_3', 'LSTM_1', 'PT_1']: continue
+
+      print(f'Recomputing labels on generated data with {method}...')
+
+      recomputed_labels_results = recompute_labels_on_generated_data(list(generation_config['LABELS'].keys()), log_paths_per_method[method], log_name=log_name)
+      save_dict_to_json(recomputed_labels_results, filepath=os.path.join(output_path, 'recomputed-labels', f'recomputed-labels-{method}.json'))
+
+  # Compute conformance and log distance measures
   log_distance_measures = {
     'full': {}, # conformance and log distance measures computed on full log
     **({'deviant': {}} if 'deviant' in log_distance_measures_also_compute_filtered_by else {}),
