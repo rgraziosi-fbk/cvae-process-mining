@@ -21,6 +21,7 @@ dataset_attributes_info = get_dataset_attributes_info(
   trace_key=DATASET_INFO['TRACE_KEY'],
   resource_key=DATASET_INFO['RESOURCE_KEY'],
   trace_attributes=DATASET_INFO['TRACE_ATTRIBUTE_KEYS'],
+  composed_label_keys=DATASET_INFO['COMPOSED_LABEL_KEYS'],
 )
 max_trace_length = MAX_TRACE_LENGTH if MAX_TRACE_LENGTH else dataset_attributes_info['max_trace_length']
 
@@ -30,8 +31,12 @@ DATASET_INFO['NUM_ACTIVITIES'] = len(dataset_attributes_info['activities']) + 1
 DATASET_INFO['RESOURCES'] = dataset_attributes_info['resources']
 DATASET_INFO['NUM_RESOURCES'] = len(dataset_attributes_info['resources']) + 1
 DATASET_INFO['TRACE_ATTRIBUTES'] = dataset_attributes_info['trace_attributes']
+DATASET_INFO['COMPOSEDLABEL2ONEHOT'] = dataset_attributes_info['composedlabel2onehot']
 
-config['C_DIM'] = DATASET_INFO['NUM_LABELS']
+if DATASET_INFO['COMPOSEDLABEL2ONEHOT']:
+  config['C_DIM'] = next(iter(DATASET_INFO['COMPOSEDLABEL2ONEHOT'].values())).size(dim=0)
+else:
+  config['C_DIM'] = DATASET_INFO['NUM_LABELS']
 
 # Load model
 model = VAE(

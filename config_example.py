@@ -56,7 +56,8 @@ DATASET_INFO = {
   'RESOURCE_KEY': 'Resource',
   'TRACE_KEY': 'Case ID',
   'LABEL_KEY': 'label',
-  'COMPOSED_LABEL_KEYS': ['label_duration', 'label_type'], # None if no composed label
+  'COMPOSED_LABEL_KEYS': ['label_type', 'label_duration'], # None if no composed label
+  # 'COMPOSED_LABEL_KEYS': None
 }
 
 # Training
@@ -85,7 +86,7 @@ config = {
 
 # Evaluation config
 evaluation_config = {
-  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/z}prove/bpic2012_c/cvae/output/best-models/best-model-epoch-1261.pt',
+  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/z}prove/bpic2012_c/cvae_composed_label/output/best-models/best-model-epoch-1285.pt',
   'LOG_NAME': DATASET_NAME,
   'INPUT_PATH': os.path.abspath('input'),
   'OUTPUT_PATH': os.path.abspath('output'),

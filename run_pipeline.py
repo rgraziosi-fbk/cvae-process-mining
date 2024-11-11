@@ -78,6 +78,8 @@ for out in [open(os.path.join(args.output_path, 'info.txt'), mode='w'), sys.stdo
   print(f'Activities ({len(DATASET_INFO["ACTIVITIES"])}): {DATASET_INFO["ACTIVITIES"]}', file=out)
   print(f'Resources ({len(DATASET_INFO["RESOURCES"])}): {DATASET_INFO["RESOURCES"]}', file=out)
   print(f'Trace attributes: {DATASET_INFO["TRACE_ATTRIBUTES"]}', file=out)
+  if DATASET_INFO['COMPOSEDLABEL2ONEHOT']:
+    print(f'Composed label 2 onehot: {DATASET_INFO["COMPOSEDLABEL2ONEHOT"]}', file=out)
 
 
 scheduler = ASHAScheduler(
