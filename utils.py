@@ -1,10 +1,11 @@
-import os
 import json
 import pm4py
 import torch
 import pandas as pd
 from contextlib import contextmanager, nullcontext, redirect_stderr, redirect_stdout
 from os import devnull
+from torch.nn.functional import one_hot
+from itertools import product
 
 def read_log(dataset_path, separator=';', timestamp_key='time:timestamp', verbose=True):
   """Read xes or csv logs"""
@@ -26,6 +27,7 @@ def get_dataset_attributes_info(
   trace_key='case:concept:name',
   resource_key='org:resource',
   trace_attributes=[],
+  composed_label_keys=None,
 ):
   dataset_attributes_info = {}
 
@@ -64,6 +66,34 @@ def get_dataset_attributes_info(
       trace_attribute_info['possible_values'] = possible_values
 
     dataset_attributes_info['trace_attributes'].append(trace_attribute_info)
+
+  if composed_label_keys:
+    composedlabel2onehot = {}
+
+    composed_label_all_values = []
+    composed_label_all_mappings = {}
+
+    for composed_label_key in composed_label_keys:
+      composed_label_values = log[composed_label_key].unique().tolist()
+      composed_label_all_values.append(composed_label_values)
+
+      # create a one-hot encoding for each label
+      composed_label_all_mappings[composed_label_key] = { label: one_hot(torch.tensor(i), num_classes=len(composed_label_values)) for i, label in enumerate(composed_label_values) }
+
+    for composed_label_product in product(*composed_label_all_values):
+      composedlabel = '_'.join(map(str, composed_label_product))
+      onehots = []
+
+      for composed_label_key in composed_label_keys:
+        for label in composed_label_product:
+          if label in composed_label_all_mappings[composed_label_key]:
+            onehots.append(composed_label_all_mappings[composed_label_key][label])
+
+      composedlabel2onehot[composedlabel] = torch.cat(onehots)
+
+      dataset_attributes_info['composedlabel2onehot'] = composedlabel2onehot
+  else:
+    dataset_attributes_info['composedlabel2onehot'] = None
 
   return dataset_attributes_info
 

@@ -27,6 +27,8 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
     resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
+    composedlabel2onehot=dataset_info['COMPOSEDLABEL2ONEHOT'],
+    composed_label_keys=dataset_info['COMPOSED_LABEL_KEYS'],
   )
   train_loader = DataLoader(dataset=train_dataset, batch_size=config['BATCH_SIZE'], shuffle=True, generator=generator)
 
@@ -44,6 +46,8 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
     resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
+    composedlabel2onehot=dataset_info['COMPOSEDLABEL2ONEHOT'],
+    composed_label_keys=dataset_info['COMPOSED_LABEL_KEYS'],
   )
   val_loader = DataLoader(dataset=val_dataset, batch_size=config['BATCH_SIZE'], shuffle=True, generator=generator)
 
