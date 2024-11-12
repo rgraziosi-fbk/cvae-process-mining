@@ -86,6 +86,7 @@ evaluate_generation(
   # log distance measures
   log_distance_measures_to_compute=evaluation_config['LOG_DISTANCE_MEASURES_TO_COMPUTE'],
   log_distance_measures_also_compute_filtered_by=evaluation_config['LOG_DISTANCE_MEASURES_ALSO_COMPUTE_FILTERED_BY'],
+  cwd_resource_to_role_mapping_file=evaluation_config['CWD_RESOURCE_TO_ROLE_MAPPING_FILE'],
 
   # t-sne plot
   should_plot_tsne=evaluation_config['SHOULD_PLOT_TSNE'],
