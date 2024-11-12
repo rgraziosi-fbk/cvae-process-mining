@@ -56,6 +56,8 @@ DATASET_INFO = {
   'RESOURCE_KEY': 'Resource',
   'TRACE_KEY': 'Case ID',
   'LABEL_KEY': 'label',
+  # 'COMPOSED_LABEL_KEYS': ['label_type', 'label_duration'], # None if no composed label
+  'COMPOSED_LABEL_KEYS': None
 }
 
 # Training
@@ -85,15 +87,22 @@ config = {
 # Evaluation config
 evaluation_config = {
   'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/cvae/sepsis/training_output/best-models/best-model-epoch-4461.pt',
+  'LOG_NAME': DATASET_NAME,
   'INPUT_PATH': os.path.abspath('input'),
   'OUTPUT_PATH': os.path.abspath('output'),
   
   'SHOULD_GENERATE': False,
   'GENERATION': {
     'NUM_GENERATIONS': 10,
+    # 'LABELS': {
+    #   'deviant_short': 77,
+    #   'deviant_long': 73,
+    #   'regular_short': 329,
+    #   'regular_long': 458,
+    # },
     'LABELS': {
-      'deviant': 154,
-      'regular': 783,
+      'deviant': 23,
+      'regular': 134,
     },
   },
 
@@ -105,20 +114,27 @@ evaluation_config = {
   'SHOULD_USE_TRANSFORMER_2': True,
   'SHOULD_USE_PROCESSGAN_1': True,
 
+  # recompute labels on generated data
+  'SHOULD_RECOMPUTE_LABELS_ON_GENERATED_DATA': False,
+
   # control every metric computation
   'SHOULD_SKIP_ALL_METRICS_COMPUTATION': False,
   'SHOULD_PLOT_BOXPLOTS': True,
 
   # conformance checking
-  'SHOULD_COMPUTE_CONFORMANCE': True,
+  'SHOULD_COMPUTE_CONFORMANCE': False,
   'CONFORMANCE_CONSIDER_VACUITY': False,
   'CONFORMANCE_MIN_SUPPORT': 0.9,
   'CONFORMANCE_ITEMSETS_SUPPORT': 0.9,
   'CONFORMANCE_MAX_DECLARE_CARDINALITY': 2,
 
   # log distance measures
-  'LOG_DISTANCE_MEASURES_TO_COMPUTE': ['cfld', 'ngram_2', 'ngram_3', 'red', 'ctd'],
+  'LOG_DISTANCE_MEASURES_TO_COMPUTE': ['cfld', 'cwd'], #['cfld', 'ngram_2', 'ngram_3', 'red', 'ctd', 'cwd'],
   'LOG_DISTANCE_MEASURES_ALSO_COMPUTE_FILTERED_BY': [],
+  # since we compare with LSTM which generates role, we use their resource-->role mapping to transform CVAE generated resources to roles
+  # so we can compare CVAE and LSTM methods with the Circadian Workforce Distribution (CWD) metric
+  # this path is only needed if you want to compute CWD
+  'CWD_RESOURCE_TO_ROLE_MAPPING_FILE': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/lstm_1/sepsis/training/resources.csv',
 
   # t-sne plot
   'SHOULD_PLOT_TSNE': False,
@@ -144,8 +160,8 @@ evaluation_config = {
   # trace attribute distributions
   'SHOULD_PLOT_TRACE_ATTRIBUTE_DISTRIBUTIONS': True,
   'TRACE_ATTRIBUTES': {
-    # 'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b|c
-    'Age': [i for i in range(30, 90, 5)], # sepsis
+    'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b|c
+    # 'Age': [i for i in range(30, 90, 5)], # sepsis
     # 'amount': [i for i in range(0, 200, 20)], # traffic_fines
   },
 
