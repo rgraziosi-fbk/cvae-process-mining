@@ -155,6 +155,13 @@ def compute_log_distance_measure(
     )
   
   if measure == 'cwd':
+    # ensure resource column are of the same type
+    original_log[dataset_info['RESOURCE_KEY']] = original_log[dataset_info['RESOURCE_KEY']].astype(str)
+    if method in ['LSTM_1', 'LSTM_2']:
+      generated_log['role'] = generated_log['role'].astype(str)
+    else:
+      generated_log[gen_resource_key] = generated_log[gen_resource_key].astype(str)
+
     # convert original_log resources to roles
     original_log = original_log.merge(
       resource_role_mapping,

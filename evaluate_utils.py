@@ -178,7 +178,7 @@ def evaluate_generation(
       os.makedirs(os.path.join(output_path, 'recomputed-labels'))
 
     for method in DEFAULT_METHODS_DICT.keys():
-      if method in ['LOG_3', 'LSTM_1', 'PT_1']: continue
+      if method in [LOG_3_KEY, LSTM_1_KEY, PROCESSGAN_1_KEY, TRANSFORMER_1_KEY]: continue
 
       print(f'Recomputing labels on generated data with {method}...')
 
