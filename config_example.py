@@ -5,7 +5,7 @@ from dataset import GenericDataset
 
 # Dataset
 # bpic2012_a, bpic2012_b, bpic2012_c, sepsis, traffic_fines
-DATASET_NAME = 'sepsis'
+DATASET_NAME = 'bpic2012_c'
 
 # Used values in the paper: bpic2012_a|b = 100, sepsis = 50, traffic_fines = 20
 if DATASET_NAME == 'sepsis':
@@ -56,6 +56,8 @@ DATASET_INFO = {
   'RESOURCE_KEY': 'Resource',
   'TRACE_KEY': 'Case ID',
   'LABEL_KEY': 'label',
+  'COMPOSED_LABEL_KEYS': ['label_type', 'label_duration'], # None if no composed label
+  # 'COMPOSED_LABEL_KEYS': None
 }
 
 # Training
@@ -84,26 +86,36 @@ config = {
 
 # Evaluation config
 evaluation_config = {
-  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/cvae/sepsis/training_output/best-models/best-model-epoch-4461.pt',
+  'MODEL_PATH': '/Users/riccardo/Documents/pdi/topics/data-augmentation/RESULTS/ProcessScienceCollection/z}prove/bpic2012_c/cvae_composed_label/output/best-models/best-model-epoch-1285.pt',
+  'LOG_NAME': DATASET_NAME,
   'INPUT_PATH': os.path.abspath('input'),
   'OUTPUT_PATH': os.path.abspath('output'),
   
   'SHOULD_GENERATE': False,
   'GENERATION': {
-    'NUM_GENERATIONS': 10,
+    'NUM_GENERATIONS': 3,
     'LABELS': {
-      'deviant': 154,
-      'regular': 783,
+      'deviant_short': 77,
+      'deviant_long': 73,
+      'regular_short': 329,
+      'regular_long': 458,
     },
+      # 'LABELS': {
+      #   'deviant': 23,
+      #   'regular': 134,
+      # },
   },
 
   'SHOULD_USE_CVAE': True,
   'SHOULD_USE_LOG_3': True,
-  'SHOULD_USE_LSTM_1': True,
-  'SHOULD_USE_LSTM_2': True,
-  'SHOULD_USE_TRANSFORMER_1': True,
-  'SHOULD_USE_TRANSFORMER_2': True,
-  'SHOULD_USE_PROCESSGAN_1': True,
+  'SHOULD_USE_LSTM_1': False,
+  'SHOULD_USE_LSTM_2': False,
+  'SHOULD_USE_TRANSFORMER_1': False,
+  'SHOULD_USE_TRANSFORMER_2': False,
+  'SHOULD_USE_PROCESSGAN_1': False,
+
+  # recompute labels on generated data
+  'SHOULD_RECOMPUTE_LABELS_ON_GENERATED_DATA': True,
 
   # control every metric computation
   'SHOULD_SKIP_ALL_METRICS_COMPUTATION': False,
@@ -144,8 +156,8 @@ evaluation_config = {
   # trace attribute distributions
   'SHOULD_PLOT_TRACE_ATTRIBUTE_DISTRIBUTIONS': True,
   'TRACE_ATTRIBUTES': {
-    # 'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b|c
-    'Age': [i for i in range(30, 90, 5)], # sepsis
+    'AMOUNT_REQ': [i for i in range(0, 100_000, 1000)], # bpic2012_a|b|c
+    # 'Age': [i for i in range(30, 90, 5)], # sepsis
     # 'amount': [i for i in range(0, 200, 20)], # traffic_fines
   },
 

@@ -22,7 +22,8 @@ class GenericDataset(Dataset):
   def __init__(
     self, dataset_path='', max_trace_length=100, num_activities=10, num_labels=2,
     trace_key='case:concept:name', activity_key='concept:name', timestamp_key='time:timestamp', resource_key='org:resource',
-    label_key='case:label', trace_attributes=[], activities=None, resources=None, highest_ts=None,
+    label_key='case:label', composedlabel2onehot=None, composed_label_keys=None,
+    trace_attributes=[], activities=None, resources=None, highest_ts=None,
   ):
     self.log = read_log(dataset_path, verbose=False)
 
@@ -54,7 +55,6 @@ class GenericDataset(Dataset):
     self.activity2n = { a: n for n, a in enumerate(activities) }
     self.n2activity = { n: a for n, a in enumerate(activities) }
 
-
     # Get resources
     if resources is None:
       resources = self.log[resource_key].unique().tolist()
@@ -77,13 +77,17 @@ class GenericDataset(Dataset):
     self.highest_ts = self.log[timestamp_key].quantile(q=0.95) if highest_ts is None else highest_ts
 
     # Get label names
-    labels = self.log[label_key].unique().tolist()
-    labels.sort()
+    if composedlabel2onehot is None:
+      labels = self.log[label_key].unique().tolist()
+      labels.sort()
 
-    assert len(labels) == self.num_labels
+      assert len(labels) == self.num_labels
 
-    # Mapping from label name to one hot encoding
-    self.label2onehot = { label: one_hot(torch.tensor(i), num_classes=self.num_labels) for i, label in enumerate(labels) }
+      # Mapping from label name to one hot encoding
+      self.label2onehot = { label: one_hot(torch.tensor(i), num_classes=self.num_labels) for i, label in enumerate(labels) }
+
+    # Composed label
+    self.composedlabel2onehot = composedlabel2onehot
 
     # Build trace attributes mapping
     self.s2i, self.i2s = {}, {}
@@ -135,8 +139,18 @@ class GenericDataset(Dataset):
       x_res = torch.tensor([self.resource2n[r] for r in x_res]).to(torch.int)
       
       # label
-      y = self.log.iloc[trace][label_key].tolist()[0] # get label from log
-      y = self.label2onehot[y].to(torch.float32) # convert to one-hot tensor
+      if composedlabel2onehot is None:
+        y = self.log.iloc[trace][label_key].tolist()[0] # get label from log
+        y = self.label2onehot[y].to(torch.float32) # convert to one-hot tensor
+      else:
+        row = self.log.iloc[trace].iloc[0]
+        composedlabel = []
+        for composed_label_key in composed_label_keys:
+          composedlabel.append(row[composed_label_key])
+        composedlabel = '_'.join(composedlabel)
+
+        y = self.composedlabel2onehot[composedlabel].to(torch.float32)
+
 
       self.x.append((x_attr, x_trace, x_ts, x_res))
       self.y.append(y)

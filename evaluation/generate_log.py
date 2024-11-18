@@ -43,6 +43,8 @@ def generate_log(
     resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
+    composedlabel2onehot=dataset_info['COMPOSEDLABEL2ONEHOT'],
+    composed_label_keys=dataset_info['COMPOSED_LABEL_KEYS'],
   )
 
   test_dataset = dataset_info['CLASS'](
@@ -58,6 +60,8 @@ def generate_log(
     resource_key=dataset_info['RESOURCE_KEY'],
     trace_key=dataset_info['TRACE_KEY'],
     label_key=dataset_info['LABEL_KEY'],
+    composedlabel2onehot=dataset_info['COMPOSEDLABEL2ONEHOT'],
+    composed_label_keys=dataset_info['COMPOSED_LABEL_KEYS'],
   )
 
   generated = []
@@ -69,7 +73,10 @@ def generate_log(
     condition_one_hot = None
 
     if model.is_conditional:
-      condition_one_hot = dataset.label2onehot[condition].view(1, -1)
+      if dataset_info['COMPOSED_LABEL_KEYS'] is None:
+        condition_one_hot = dataset.label2onehot[condition].view(1, -1)
+      else:
+        condition_one_hot = dataset.composedlabel2onehot[condition].view(1, -1)
 
     for _ in range(num_to_generate):
       mean, var = torch.zeros((model.z_dim)), torch.ones((model.z_dim))

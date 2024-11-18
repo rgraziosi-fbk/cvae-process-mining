@@ -48,6 +48,7 @@ dataset_attributes_info = get_dataset_attributes_info(
   trace_key=DATASET_INFO['TRACE_KEY'],
   resource_key=DATASET_INFO['RESOURCE_KEY'],
   trace_attributes=DATASET_INFO['TRACE_ATTRIBUTE_KEYS'],
+  composed_label_keys=DATASET_INFO['COMPOSED_LABEL_KEYS'],
 )
 max_trace_length = MAX_TRACE_LENGTH if MAX_TRACE_LENGTH else dataset_attributes_info['max_trace_length']
 
@@ -57,9 +58,18 @@ DATASET_INFO['NUM_ACTIVITIES'] = len(dataset_attributes_info['activities']) + 1
 DATASET_INFO['RESOURCES'] = dataset_attributes_info['resources']
 DATASET_INFO['NUM_RESOURCES'] = len(dataset_attributes_info['resources']) + 1
 DATASET_INFO['TRACE_ATTRIBUTES'] = dataset_attributes_info['trace_attributes']
+DATASET_INFO['COMPOSEDLABEL2ONEHOT'] = dataset_attributes_info['composedlabel2onehot']
 
-# Configure hyperparam search space
-config['C_DIM'] = DATASET_INFO['NUM_LABELS'] if MODEL_TYPE == 'cvae' else 0
+# Set C_DIM based on model type and composed label
+if MODEL_TYPE == 'cvae':
+  if DATASET_INFO['COMPOSEDLABEL2ONEHOT']:
+    config['C_DIM'] = next(iter(DATASET_INFO['COMPOSEDLABEL2ONEHOT'].values())).size(dim=0)
+  else:
+    config['C_DIM'] = DATASET_INFO['NUM_LABELS']
+else:
+    config['C_DIM'] = 0
+
+
 config['NUM_EPOCHS'] = MAX_NUM_EPOCHS
 
 # Print some info
@@ -68,6 +78,8 @@ for out in [open(os.path.join(args.output_path, 'info.txt'), mode='w'), sys.stdo
   print(f'Activities ({len(DATASET_INFO["ACTIVITIES"])}): {DATASET_INFO["ACTIVITIES"]}', file=out)
   print(f'Resources ({len(DATASET_INFO["RESOURCES"])}): {DATASET_INFO["RESOURCES"]}', file=out)
   print(f'Trace attributes: {DATASET_INFO["TRACE_ATTRIBUTES"]}', file=out)
+  if DATASET_INFO['COMPOSEDLABEL2ONEHOT']:
+    print(f'Composed label 2 onehot: {DATASET_INFO["COMPOSEDLABEL2ONEHOT"]}', file=out)
 
 
 scheduler = ASHAScheduler(
