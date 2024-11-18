@@ -62,6 +62,7 @@ def evaluate_generation(
   # log distance measures
   log_distance_measures_to_compute=[],
   log_distance_measures_also_compute_filtered_by=[],
+  cwd_resource_to_role_mapping_file=None,
 
   # t-sne
   should_plot_tsne=True,
@@ -177,7 +178,7 @@ def evaluate_generation(
       os.makedirs(os.path.join(output_path, 'recomputed-labels'))
 
     for method in DEFAULT_METHODS_DICT.keys():
-      if method in ['LOG_3', 'LSTM_1', 'PT_1']: continue
+      if method in [LOG_3_KEY, LSTM_1_KEY, PROCESSGAN_1_KEY, TRANSFORMER_1_KEY]: continue
 
       print(f'Recomputing labels on generated data with {method}...')
 
@@ -258,6 +259,9 @@ def evaluate_generation(
         # we cannot compute filtered metrics for methods that do not generate labels
         if filter_log_by is not None and method in [LSTM_1_KEY, TRANSFORMER_1_KEY, PROCESSGAN_1_KEY]: continue
 
+        # we cannot compute cwd for methods that do not generate resources/roles
+        if measure_to_compute == 'cwd' and method not in [LOG_3_KEY, CVAE_KEY, LSTM_1_KEY, LSTM_2_KEY]: continue
+
         for i, log_path in enumerate(log_paths):
           measure_results[method].append(
             compute_log_distance_measure(
@@ -265,7 +269,9 @@ def evaluate_generation(
               log_path,
               dataset_info,
               measure=measure_to_compute,
+              method=method,
               filter_log_by=filter_log_by,
+              cwd_resource_to_role_mapping_file=cwd_resource_to_role_mapping_file,
               gen_log_trace_key=dataset_info['TRACE_KEY'] if method in [LOG_3_KEY] else 'case:concept:name',
               gen_log_activity_key=dataset_info['ACTIVITY_KEY'] if method in [LOG_3_KEY] else 'concept:name',
               gen_resource_key=dataset_info['RESOURCE_KEY'] if method in [LOG_3_KEY] else 'org:resource',
@@ -291,9 +297,16 @@ def evaluate_generation(
       ts_log_distance_measures = {
         key: value for key, value in log_distance_measures[filter_log_by_idx].items() if key in ['aed', 'cad', 'ced', 'red', 'ctd']
       }
+      res_log_distance_measures = {
+        key: value for key, value in log_distance_measures[filter_log_by_idx].items() if key in ['cwd']
+      }
       plot_boxplots(log_distance_measures[filter_log_by_idx], output_path=output_path, output_filename=f'log_distance_measures-{filter_log_by_idx}.png')
-      plot_boxplots(cf_log_distance_measures, output_path=output_path, output_filename=f'cf_log_distance_measures-{filter_log_by_idx}.png')
-      plot_boxplots(ts_log_distance_measures, output_path=output_path, output_filename=f'ts_log_distance_measures-{filter_log_by_idx}.png')
+      if cf_log_distance_measures:
+        plot_boxplots(cf_log_distance_measures, output_path=output_path, output_filename=f'cf_log_distance_measures-{filter_log_by_idx}.png')
+      if ts_log_distance_measures:
+        plot_boxplots(ts_log_distance_measures, output_path=output_path, output_filename=f'ts_log_distance_measures-{filter_log_by_idx}.png')
+      if res_log_distance_measures:
+        plot_boxplots(res_log_distance_measures, output_path=output_path, output_filename=f'res_log_distance_measures-{filter_log_by_idx}.png')
 
   # Plot t-sne
   if should_plot_tsne:
