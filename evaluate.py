@@ -68,6 +68,7 @@ evaluate_generation(
   should_use_transformer_1=evaluation_config['SHOULD_USE_TRANSFORMER_1'],
   should_use_transformer_2=evaluation_config['SHOULD_USE_TRANSFORMER_2'],
   should_use_processgan_1=evaluation_config['SHOULD_USE_PROCESSGAN_1'],
+  should_use_processgan_2=evaluation_config['SHOULD_USE_PROCESSGAN_2'],
 
   # recompute labels on generated data
   should_recompute_labels_on_generated_data=evaluation_config['SHOULD_RECOMPUTE_LABELS_ON_GENERATED_DATA'],

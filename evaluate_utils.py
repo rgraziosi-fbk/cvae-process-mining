@@ -29,6 +29,7 @@ LSTM_2_KEY = 'LSTM_2'
 TRANSFORMER_1_KEY = 'PT_1'
 TRANSFORMER_2_KEY = 'PT_2'
 PROCESSGAN_1_KEY = 'PG_1'
+PROCESSGAN_2_KEY = 'PG_2'
 
 def evaluate_generation(
   model,
@@ -46,6 +47,7 @@ def evaluate_generation(
   should_use_transformer_1=True,
   should_use_transformer_2=True,
   should_use_processgan_1=True,
+  should_use_processgan_2=True,
 
   should_recompute_labels_on_generated_data=True,
 
@@ -105,6 +107,7 @@ def evaluate_generation(
     **({TRANSFORMER_1_KEY: []} if should_use_transformer_1 else {}),
     **({TRANSFORMER_2_KEY: []} if should_use_transformer_2 else {}),
     **({PROCESSGAN_1_KEY: []} if should_use_processgan_1 else {}),
+    **({PROCESSGAN_2_KEY: []} if should_use_processgan_2 else {}),
   }
 
   if not os.path.exists(output_path):
@@ -171,6 +174,10 @@ def evaluate_generation(
   if should_use_processgan_1:
     log_paths_per_method[PROCESSGAN_1_KEY] = glob.glob(os.path.join(input_path, 'processgan_1') + '/*.csv')
     assert len(log_paths_per_method[PROCESSGAN_1_KEY]) == 3 or len(log_paths_per_method[PROCESSGAN_1_KEY]) == 4
+
+  if should_use_processgan_2:
+    log_paths_per_method[PROCESSGAN_2_KEY] = glob.glob(os.path.join(input_path, 'processgan_2') + '/*.csv')
+    assert len(log_paths_per_method[PROCESSGAN_2_KEY]) == 3 or len(log_paths_per_method[PROCESSGAN_2_KEY]) == 4
 
   # Recompute labels on generated data
   if should_recompute_labels_on_generated_data:
@@ -413,7 +420,7 @@ def evaluate_generation(
     print('Plotting resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY]: continue
+      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY, PROCESSGAN_2_KEY]: continue
     
       for i, generated_log_path in enumerate(log_paths):
         plot_resource_distribution(
@@ -428,7 +435,7 @@ def evaluate_generation(
     print('Plotting activity by resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY]: continue
+      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY, PROCESSGAN_2_KEY]: continue
 
       for i, generated_log_path in enumerate(log_paths):
         plot_activity_distribution_by_resource(
