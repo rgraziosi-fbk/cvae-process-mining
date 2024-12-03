@@ -24,6 +24,7 @@ plt.set_loglevel('warning')
 
 LOG_3_KEY = 'LOG_3'
 CVAE_KEY = 'CVAE'
+OLD_CVAE_KEY = 'OLD_CVAE'
 LSTM_1_KEY = 'LSTM_1'
 LSTM_2_KEY = 'LSTM_2'
 TRANSFORMER_1_KEY = 'PT_1'
@@ -41,6 +42,7 @@ def evaluate_generation(
   output_path=None,
 
   should_use_cvae=True,
+  should_use_old_cvae=True,
   should_use_log_3=True,
   should_use_lstm_1=True,
   should_use_lstm_2=True,
@@ -50,6 +52,7 @@ def evaluate_generation(
   should_use_processgan_2=True,
 
   should_recompute_labels_on_generated_data=True,
+  labels=[],
 
   should_skip_all_metrics_computation=False,
   should_plot_boxplots=True,
@@ -102,6 +105,7 @@ def evaluate_generation(
   DEFAULT_METHODS_DICT = {
     **({LOG_3_KEY: []} if should_use_log_3 else {}),
     **({CVAE_KEY: []} if should_use_cvae else {}),
+    **({OLD_CVAE_KEY: []} if should_use_old_cvae else {}),
     **({LSTM_1_KEY: []} if should_use_lstm_1 else {}),
     **({LSTM_2_KEY: []} if should_use_lstm_2 else {}),
     **({TRANSFORMER_1_KEY: []} if should_use_transformer_1 else {}),
@@ -138,6 +142,13 @@ def evaluate_generation(
       f.write(str(gen_time))
   else:
     log_paths_per_method[CVAE_KEY] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
+
+
+  # OLD_CVAE
+  if should_use_old_cvae:
+    log_paths_per_method[OLD_CVAE_KEY] = glob.glob(os.path.join(input_path, 'old_cvae') + '/*.csv')
+    if should_use_cvae:
+      assert len(log_paths_per_method[OLD_CVAE_KEY]) == len(log_paths_per_method[CVAE_KEY])
 
   # LOG_4
   if should_use_log_3:
@@ -185,11 +196,16 @@ def evaluate_generation(
       os.makedirs(os.path.join(output_path, 'recomputed-labels'))
 
     for method in DEFAULT_METHODS_DICT.keys():
-      if method in [LOG_3_KEY, LSTM_1_KEY, PROCESSGAN_1_KEY, TRANSFORMER_1_KEY]: continue
+      if method in [LOG_3_KEY]: continue
 
       print(f'Recomputing labels on generated data with {method}...')
 
-      recomputed_labels_results = recompute_labels_on_generated_data(list(generation_config['LABELS'].keys()), log_paths_per_method[method], log_name=log_name)
+      recomputed_labels_results = recompute_labels_on_generated_data(
+        labels,
+        log_paths_per_method[method],
+        log_name=log_name,
+        generated_label_is_present=method in [CVAE_KEY, OLD_CVAE_KEY, LSTM_2_KEY, TRANSFORMER_2_KEY, PROCESSGAN_2_KEY]
+      )
       save_dict_to_json(recomputed_labels_results, filepath=os.path.join(output_path, 'recomputed-labels', f'recomputed-labels-{method}.json'))
 
   # Compute conformance and log distance measures

@@ -62,6 +62,7 @@ evaluate_generation(
   output_path=evaluation_config['OUTPUT_PATH'],
 
   should_use_cvae=evaluation_config['SHOULD_USE_CVAE'],
+  should_use_old_cvae=evaluation_config['SHOULD_USE_OLD_CVAE'],
   should_use_log_3=evaluation_config['SHOULD_USE_LOG_3'],
   should_use_lstm_1=evaluation_config['SHOULD_USE_LSTM_1'],
   should_use_lstm_2=evaluation_config['SHOULD_USE_LSTM_2'],
@@ -72,6 +73,7 @@ evaluate_generation(
 
   # recompute labels on generated data
   should_recompute_labels_on_generated_data=evaluation_config['SHOULD_RECOMPUTE_LABELS_ON_GENERATED_DATA'],
+  labels=evaluation_config['LABELS'],
 
   # control every metric computation
   should_skip_all_metrics_computation=evaluation_config['SHOULD_SKIP_ALL_METRICS_COMPUTATION'],
