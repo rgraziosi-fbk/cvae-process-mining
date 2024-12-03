@@ -184,7 +184,8 @@ def label_traffic_fines(group):
 def recompute_labels_on_generated_data(
   labels,
   generated_logs_path,
-  log_name
+  log_name,
+  generated_label_is_present=True,
 ):
   return_dict = { 'label_count': {}, 'num_errors': [] }
   label_count = { label: [] for label in labels }
@@ -215,22 +216,23 @@ def recompute_labels_on_generated_data(
       assert False, f'Unknown log name: {log_name}'
   
     # count number of errors between label and recomputed_label
-    num_errors.append(len(list(generated_log[generated_log[LABEL_KEY] != generated_log[RECOMPUTED_LABEL_KEY]][CASE_ID_KEY].unique())))
+    if generated_label_is_present:
+      num_errors.append(len(list(generated_log[generated_log[LABEL_KEY] != generated_log[RECOMPUTED_LABEL_KEY]][CASE_ID_KEY].unique())))
 
-    # count the number of predictions-ground_truth
-    for label_predicted in labels:
-      for label_ground_truth in labels:
-        if f'{label_predicted}_{label_ground_truth}' not in preds:
-          preds[f'{label_predicted}_{label_ground_truth}'] = [0]
-        else:
-          preds[f'{label_predicted}_{label_ground_truth}'].append(0)
+      # count the number of predictions-ground_truth
+      for label_predicted in labels:
+        for label_ground_truth in labels:
+          if f'{label_predicted}_{label_ground_truth}' not in preds:
+            preds[f'{label_predicted}_{label_ground_truth}'] = [0]
+          else:
+            preds[f'{label_predicted}_{label_ground_truth}'].append(0)
 
-    cases = generated_log[CASE_ID_KEY].unique().tolist()
-    for case in cases:
-      predicted_label = generated_log[generated_log[CASE_ID_KEY] == case][LABEL_KEY].iloc[0]
-      ground_truth_label = generated_log[generated_log[CASE_ID_KEY] == case][RECOMPUTED_LABEL_KEY].iloc[0]
-      
-      preds[f'{predicted_label}_{ground_truth_label}'][-1] += 1
+      cases = generated_log[CASE_ID_KEY].unique().tolist()
+      for case in cases:
+        predicted_label = generated_log[generated_log[CASE_ID_KEY] == case][LABEL_KEY].iloc[0]
+        ground_truth_label = generated_log[generated_log[CASE_ID_KEY] == case][RECOMPUTED_LABEL_KEY].iloc[0]
+        
+        preds[f'{predicted_label}_{ground_truth_label}'][-1] += 1
 
     # append label count
     log_label_count = count_labels_in_log(labels, generated_log_path, log=generated_log, label_key=RECOMPUTED_LABEL_KEY)
@@ -239,8 +241,9 @@ def recompute_labels_on_generated_data(
 
 
   # Print some statistics
-  num_errors_avg = sum(num_errors) / len(num_errors)
-  num_errors_std = (sum([(x - num_errors_avg) ** 2 for x in num_errors]) / len(num_errors)) ** 0.5
+  if generated_label_is_present:
+    num_errors_avg = sum(num_errors) / len(num_errors)
+    num_errors_std = (sum([(x - num_errors_avg) ** 2 for x in num_errors]) / len(num_errors)) ** 0.5
 
   for label in labels:
     avg = sum(label_count[label]) / len(label_count[label])
@@ -249,14 +252,16 @@ def recompute_labels_on_generated_data(
     print(f'Num "{label}": {(avg):.2f} ± {(std):.2f}')
     return_dict[label] = { 'avg': avg, 'std': std }
 
-  return_dict['predictions'] = {f'{label_predicted}_{label_ground_truth}': {'avg': None, 'std': None} for label_predicted in labels for label_ground_truth in labels}
+  if generated_label_is_present:
+    return_dict['predictions'] = {f'{label_predicted}_{label_ground_truth}': {'avg': None, 'std': None} for label_predicted in labels for label_ground_truth in labels}
 
-  for label_predicted in labels:
-    for label_ground_truth in labels:
-      return_dict['predictions'][f'{label_predicted}_{label_ground_truth}']['avg'] = sum(preds[f'{label_predicted}_{label_ground_truth}']) / len(preds[f'{label_predicted}_{label_ground_truth}'])
-      return_dict['predictions'][f'{label_predicted}_{label_ground_truth}']['std'] = (sum((x - return_dict['predictions'][f'{label_predicted}_{label_ground_truth}']['avg'])**2 for x in preds[f'{label_predicted}_{label_ground_truth}'])) / len(preds[f'{label_predicted}_{label_ground_truth}'])**0.5
+    for label_predicted in labels:
+      for label_ground_truth in labels:
+        return_dict['predictions'][f'{label_predicted}_{label_ground_truth}']['avg'] = sum(preds[f'{label_predicted}_{label_ground_truth}']) / len(preds[f'{label_predicted}_{label_ground_truth}'])
+        return_dict['predictions'][f'{label_predicted}_{label_ground_truth}']['std'] = (sum((x - return_dict['predictions'][f'{label_predicted}_{label_ground_truth}']['avg'])**2 for x in preds[f'{label_predicted}_{label_ground_truth}'])) / len(preds[f'{label_predicted}_{label_ground_truth}'])**0.5
 
-  return_dict['num_errors'] = { 'avg': num_errors_avg, 'std': num_errors_std }
+    return_dict['num_errors'] = { 'avg': num_errors_avg, 'std': num_errors_std }
+
   return_dict['label_count'] = label_count
 
   return return_dict
