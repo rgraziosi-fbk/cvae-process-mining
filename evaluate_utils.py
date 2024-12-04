@@ -436,7 +436,7 @@ def evaluate_generation(
     print('Plotting resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY, PROCESSGAN_2_KEY]: continue
+      if method in [LOG_3_KEY, OLD_CVAE_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY, PROCESSGAN_2_KEY]: continue
     
       for i, generated_log_path in enumerate(log_paths):
         plot_resource_distribution(
@@ -451,7 +451,7 @@ def evaluate_generation(
     print('Plotting activity by resource distributions...')
 
     for method, log_paths in log_paths_per_method.items():
-      if method in [LOG_3_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY, PROCESSGAN_2_KEY]: continue
+      if method in [LOG_3_KEY, OLD_CVAE_KEY, LSTM_1_KEY, LSTM_2_KEY, TRANSFORMER_1_KEY, TRANSFORMER_2_KEY, PROCESSGAN_1_KEY, PROCESSGAN_2_KEY]: continue
 
       for i, generated_log_path in enumerate(log_paths):
         plot_activity_distribution_by_resource(
