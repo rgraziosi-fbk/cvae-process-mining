@@ -111,30 +111,30 @@ for metric_file_path in LOGS_TO_PLOT:
 
 
 default_figsize = plt.rcParams.get('figure.figsize')
-fig, axs = plt.subplots(len(LOGS_TO_PLOT), len(METRICS_TO_PLOT), figsize=(default_figsize[0]*len(METRICS_TO_PLOT), default_figsize[1]*len(LOGS_TO_PLOT)))
+fig, axs = plt.subplots(len(METRICS_TO_PLOT), len(LOGS_TO_PLOT), figsize=(default_figsize[0]*len(LOGS_TO_PLOT), default_figsize[1]*len(METRICS_TO_PLOT)))
 
-for i, log in enumerate(logs_metrics):
-  for j, metric in enumerate(METRICS_TO_PLOT):
+for i, metric in enumerate(METRICS_TO_PLOT):
+  for j, log in enumerate(logs_metrics):
     if len(METRICS_TO_PLOT) == 1:
-      ax = axs[i]
+      ax = axs[j]
     else:
       ax = axs[i, j]
 
-    labels, data = logs_metrics[i][metric].keys(), logs_metrics[i][metric].values()
+    labels, data = logs_metrics[j][metric].keys(), logs_metrics[j][metric].values()
 
     boxplot = ax.boxplot(data, patch_artist=True, medianprops={'color': 'black', 'linewidth': 0.5})
     
     ax.set_xticks([])
     ax.set_xticklabels([])
     
-    # write the metric name
-    if i == 0:
-      ax.set_title(metric_key2name[metric], fontsize=16, fontweight='bold', pad=20)
-
     # write the log name
+    if i == 0:
+      log_key = LOGS_TO_PLOT[j].split('-')[0]
+      ax.set_title(log_key2name[log_key], fontsize=16, fontweight='bold', pad=20)
+
+    # write the metric name
     if j == 0:
-      log_key = LOGS_TO_PLOT[i].split('-')[0]
-      ax.set_ylabel(log_key2name[log_key], fontsize=16, fontweight='bold', labelpad=20)
+      ax.set_ylabel(metric_key2name[metric], fontsize=16, fontweight='bold', labelpad=20)
 
     for patch, color in zip(boxplot['boxes'], COLORS[:len(METHODS_TO_PLOT)]):
       patch.set_facecolor(color)
@@ -152,7 +152,10 @@ fig.legend(handles=legend_handles, loc='upper center', ncol=len(METHODS_TO_PLOT)
 plt.tight_layout()
 
 # Avoid overlapping of legend and plot
-plt.subplots_adjust(top=0.9)
+if len(METRICS_TO_PLOT) == 1:
+  plt.subplots_adjust(top=0.75)
+else:
+  plt.subplots_adjust(top=0.85)
 
 # Save the plot
 plt.savefig(os.path.join(METRICS_PATH, 'plot.png'))
