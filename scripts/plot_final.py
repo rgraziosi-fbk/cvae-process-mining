@@ -147,7 +147,7 @@ for color, method in zip(COLORS, METHODS_TO_PLOT):
   legend_handles.append(mpatches.Patch(facecolor=color, label=method_key2name[method], edgecolor='black', linewidth=1))
 
 # Add the custom legend to the figure
-fig.legend(handles=legend_handles, loc='upper center', ncol=len(METHODS_TO_PLOT), fontsize='large')
+fig.legend(handles=legend_handles, loc='upper center', ncol=len(METHODS_TO_PLOT), fontsize='xx-large')
 
 plt.tight_layout()
 
