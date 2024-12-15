@@ -10,6 +10,7 @@ NGRAM_2_METRIC_KEY = 'ngram_2'
 CTD_METRIC_KEY = 'ctd'
 RED_METRIC_KEY = 'red'
 CWD_METRIC_KEY = 'cwd'
+CWD_RESOURCES_METRIC_KEY = 'cwd_resources'
 
 SEPSIS_LOG_KEY = 'sepsis'
 BPIC2012_A_LOG_KEY = 'bpic2012_a'
@@ -27,7 +28,19 @@ PROCESSGAN_2_METHOD_KEY = 'PG_2'
 FILTER_BY = 'full'
 METRICS_PATH = '/Users/riccardo/Documents/pdi/topics/data-augmentation/cvae-process-mining/additional_material/process_science/metrics/'
 
-COLORS = ['#c3e0f6', '#ea7693', '#d23359', '#73b459', '#f7c242', '#f7f7f7', '#d3d3d3', '#a9a9a9', '#7f7f7f', '#595959', '#262626']
+COLORS = [
+  '#c3e0f6', # train_log
+  '#ea7693', # cvae
+  '#d23359', # old_cvae
+  '#73b459', # lstm1
+  '#f7c242', # lstm2
+  '#f7f7f7', # p_gan1
+  '#d3d3d3', # p_gan2
+  '#a9a9a9',
+  '#7f7f7f',
+  '#595959',
+  '#262626',
+]
 
 # Mapping of metrics|logs|methods name
 
@@ -37,13 +50,14 @@ metric_key2name = {
   NGRAM_2_METRIC_KEY: '2GD',
   CTD_METRIC_KEY: 'CTD',
   RED_METRIC_KEY: 'RED',
-  CWD_METRIC_KEY: 'CWD',
+  CWD_METRIC_KEY: 'CWD_ROLE',
+  CWD_RESOURCES_METRIC_KEY: 'CWD_RES',
 }
 
 log_key2name = {
   SEPSIS_LOG_KEY: 'Sepsis',
-  BPIC2012_A_LOG_KEY: 'Bpic2012_1',
-  BPIC2012_B_LOG_KEY: 'Bpic2012_2',
+  BPIC2012_A_LOG_KEY: 'Bpic2012_a',
+  BPIC2012_B_LOG_KEY: 'Bpic2012_b',
   TRAFFIC_FINES_LOG_KEY: 'Traffic_Fines',
 }
 
@@ -51,17 +65,17 @@ method_key2name = {
   LOG_METHOD_KEY: 'train_log',
   CVAE_METHOD_KEY: 'cvae',
   CVAE_OLD_METHOD_KEY: 'old_cvae',
-  LSTM_1_METHOD_KEY: 'lstm_1',
-  LSTM_2_METHOD_KEY: 'lstm_2',
-  PROCESSGAN_1_METHOD_KEY: 'processgan_1',
-  PROCESSGAN_2_METHOD_KEY: 'processgan_2',
+  LSTM_1_METHOD_KEY: 'lstm1',
+  LSTM_2_METHOD_KEY: 'lstm2',
+  PROCESSGAN_1_METHOD_KEY: 'p_gan1',
+  PROCESSGAN_2_METHOD_KEY: 'p_gan2',
 }
 
 # Configuration
 
 LOGS_TO_PLOT = [
   f'{SEPSIS_LOG_KEY}-{FILTER_BY}.json',
-  # f'{BPIC2012_A_LOG_KEY}-{FILTER_BY}.json',
+  f'{BPIC2012_A_LOG_KEY}-{FILTER_BY}.json',
   f'{BPIC2012_B_LOG_KEY}-{FILTER_BY}.json',
   f'{TRAFFIC_FINES_LOG_KEY}-{FILTER_BY}.json',
 ]
@@ -76,6 +90,7 @@ METRICS_TO_PLOT = [
   # CTD_METRIC_KEY,
 
   # CWD_METRIC_KEY,
+  # CWD_RESOURCES_METRIC_KEY,
 ]
 
 METHODS_TO_PLOT = [

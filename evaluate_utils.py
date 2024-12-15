@@ -120,28 +120,29 @@ def evaluate_generation(
   log_paths_per_method = copy.deepcopy(DEFAULT_METHODS_DICT)
 
   # VAE
-  if should_generate:
-    gen_start_time = time.time()
+  if should_use_cvae:
+    if should_generate:
+      gen_start_time = time.time()
 
-    for i in range(generation_config['NUM_GENERATIONS']):
-      print(f'Generating log {i+1}/{generation_config["NUM_GENERATIONS"]}')
-      generated_log_path = generate_log(
-        model,
-        generation_config=generation_config['LABELS'],
-        dataset_info=dataset_info,
-        output_path=os.path.join(output_path, 'gen'),
-        output_name=f'gen{i+1}'
-      )
-      log_paths_per_method[CVAE_KEY].append(generated_log_path)
+      for i in range(generation_config['NUM_GENERATIONS']):
+        print(f'Generating log {i+1}/{generation_config["NUM_GENERATIONS"]}')
+        generated_log_path = generate_log(
+          model,
+          generation_config=generation_config['LABELS'],
+          dataset_info=dataset_info,
+          output_path=os.path.join(output_path, 'gen'),
+          output_name=f'gen{i+1}'
+        )
+        log_paths_per_method[CVAE_KEY].append(generated_log_path)
 
-    gen_end_time = time.time()
+      gen_end_time = time.time()
 
-    gen_time = gen_end_time - gen_start_time
+      gen_time = gen_end_time - gen_start_time
 
-    with open(os.path.join(output_path, 'generation_time.txt'), 'w') as f:
-      f.write(str(gen_time))
-  else:
-    log_paths_per_method[CVAE_KEY] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
+      with open(os.path.join(output_path, 'generation_time.txt'), 'w') as f:
+        f.write(str(gen_time))
+    else:
+      log_paths_per_method[CVAE_KEY] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
 
 
   # OLD_CVAE
@@ -153,7 +154,7 @@ def evaluate_generation(
   # LOG_4
   if should_use_log_3:
     log_paths_per_method[LOG_3_KEY] = glob.glob(os.path.join(input_path, 'log_3') + '/*.csv')
-    assert len(log_paths_per_method[LOG_3_KEY]) == 3
+    assert len(log_paths_per_method[LOG_3_KEY]) == 3 or len(log_paths_per_method[LOG_3_KEY]) == 12
   
   # LSTM_1
   if should_use_lstm_1:
@@ -304,6 +305,35 @@ def evaluate_generation(
       log_distance_measures[filter_log_by_idx][measure_to_compute] = measure_results
       save_dict_to_json(measure_results, filepath=os.path.join(output_path, f'{measure_to_compute}-{filter_log_by_idx}.json'))
 
+    # Compute CWD for LOG_3 and CVAE comparing resources and not roles
+    if 'cwd' in log_distance_measures_to_compute:
+      print(f'Computing cwd_resources for log filtered by {filter_log_by}...')
+
+      cwd_resources_results = { LOG_3_KEY: [], CVAE_KEY: [] }
+
+      for method, log_paths in log_paths_per_method.items():
+        if method not in [LOG_3_KEY, CVAE_KEY]: continue
+
+        for i, log_path in enumerate(log_paths):
+          cwd_resources_results[method].append(
+            compute_log_distance_measure(
+              dataset_info['TEST'],
+              log_path,
+              dataset_info,
+              measure='cwd',
+              method=method,
+              filter_log_by=filter_log_by,
+              cwd_resource_to_role_mapping_file=cwd_resource_to_role_mapping_file,
+              cwd_convert_resources_to_roles=False, # this enables comparison between resources and not roles!
+              gen_log_trace_key=dataset_info['TRACE_KEY'] if method in [LOG_3_KEY] else 'case:concept:name',
+              gen_log_activity_key=dataset_info['ACTIVITY_KEY'] if method in [LOG_3_KEY] else 'concept:name',
+              gen_resource_key=dataset_info['RESOURCE_KEY'] if method in [LOG_3_KEY] else 'org:resource',
+            )
+          )
+
+      log_distance_measures[filter_log_by_idx]['cwd_resources'] = cwd_resources_results
+      save_dict_to_json(cwd_resources_results, filepath=os.path.join(output_path, f'cwd_resources-{filter_log_by_idx}.json'))
+
     # Save log_distance_measures
     log_distance_measures_path = os.path.join(output_path, f'log_distance_measures-{filter_log_by_idx}.json')
     if not should_skip_all_metrics_computation:
@@ -321,7 +351,7 @@ def evaluate_generation(
         key: value for key, value in log_distance_measures[filter_log_by_idx].items() if key in ['aed', 'cad', 'ced', 'red', 'ctd']
       }
       res_log_distance_measures = {
-        key: value for key, value in log_distance_measures[filter_log_by_idx].items() if key in ['cwd']
+        key: value for key, value in log_distance_measures[filter_log_by_idx].items() if key in ['cwd', 'cwd_resources']
       }
       plot_boxplots(log_distance_measures[filter_log_by_idx], output_path=output_path, output_filename=f'log_distance_measures-{filter_log_by_idx}.png')
       if cf_log_distance_measures:

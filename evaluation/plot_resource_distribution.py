@@ -27,6 +27,7 @@ def plot_resource_distribution(original_log_path, generated_log_path, dataset_in
   generated_log[dataset_info['RESOURCE_KEY']] = generated_log[dataset_info['RESOURCE_KEY']].astype(str)
 
   resources = dataset_info['RESOURCES']
+  resources = sorted(resources)
 
   original_resource_distribution = original_log[dataset_info['RESOURCE_KEY']].value_counts(normalize=True)
   generated_resource_distribution = generated_log[dataset_info['RESOURCE_KEY']].value_counts(normalize=True)
@@ -50,12 +51,12 @@ def plot_resource_distribution(original_log_path, generated_log_path, dataset_in
 
   # plot a single histogram with the two distributions
   fig, ax = plt.subplots()
-  ax.bar(resources, original_resource_distribution_list, alpha=0.5, label='Original', color='blue')
+  ax.bar(resources, original_resource_distribution_list, alpha=0.5, label='Original (test_log)', color='blue')
   ax.bar(resources, generated_resource_distribution_list, alpha=0.5, label='Generated', color='red')
   ax.set_xlabel('Resource')
   ax.set_ylabel('Frequency')
   ax.legend()
-  plt.title('Resource distribution')
+  # plt.title('Resource distribution')
   plt.xticks(rotation=0)
   plt.tight_layout()
 

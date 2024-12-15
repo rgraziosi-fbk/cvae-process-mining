@@ -37,14 +37,15 @@ def plot_trace_attribute_distributions(
   axs = axs.flatten()
 
   for i, (attr_name, attr_bins) in enumerate(trace_attributes.items()):
-    axs[i].hist(original_log[attr_name], bins=attr_bins, orientation='vertical', color='blue', alpha=0.5, label=f'Original', density=False)
+    axs[i].hist(original_log[attr_name], bins=attr_bins, orientation='vertical', color='blue', alpha=0.5, label=f'Original (test_log)', density=False)
     axs[i].hist(generated_log[attr_name], bins=attr_bins, orientation='vertical', color='red', alpha=0.5, label='Generated', density=False)
 
-    axs[i].set_title(attr_name)
+    axs[i].set_xlabel(attr_name)
+    axs[i].set_ylabel('Frequency')
 
-  fig.suptitle('Trace attribute distributions', fontsize=16)
+  # fig.suptitle('Trace attribute distributions', fontsize=16)
   fig.subplots_adjust(hspace=0.5)
-  legend_elements = [Line2D([0], [0], color='blue', lw=4, label='Original'),
+  legend_elements = [Line2D([0], [0], color='blue', lw=4, label='Original (test_log)'),
                    Line2D([0], [0], color='red', lw=4, label='Generated')]
   fig.legend(handles=legend_elements, loc='upper right')
 
