@@ -5,8 +5,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 class Encoder(nn.Module):
   def __init__(self, trace_attributes, num_activities, num_resources, num_lstm_layers,
-               attr_e_dim, act_e_dim, res_e_dim, cf_dim, z_dim, c_dim, dropout_p,
-               is_conditional):
+               cf_dim, z_dim, c_dim, dropout_p, is_conditional):
     super(Encoder, self).__init__()
 
     self.trace_attributes = trace_attributes
@@ -14,38 +13,23 @@ class Encoder(nn.Module):
 
     self.dropout = nn.Dropout(p=dropout_p)
 
-    self.attr2e = nn.ModuleDict()
     self.tot_attr_e_dim = 0
     for trace_attr in trace_attributes:
       if trace_attr['type'] == 'categorical':
-        self.attr2e[trace_attr['name']] = nn.Embedding(
-          num_embeddings=len(trace_attr['possible_values']),
-          embedding_dim=attr_e_dim,
-        )
-        self.tot_attr_e_dim += attr_e_dim
+        self.tot_attr_e_dim += len(trace_attr['possible_values'])
       elif trace_attr['type'] == 'numerical':
         self.tot_attr_e_dim += 1
       else:
         raise Exception(f'Unknown trace attribute type: {trace_attr["type"]}')
       
     self.has_trace_attributes = self.tot_attr_e_dim > 0
-
     self.attrs2attrs = nn.Linear(self.tot_attr_e_dim, self.tot_attr_e_dim // 2)
 
-    self.act2e = nn.Embedding(
-      num_embeddings=num_activities+1,
-      embedding_dim=act_e_dim,
-      padding_idx=num_activities,
-    )
-
-    self.res2e = nn.Embedding(
-      num_embeddings=num_resources+1,
-      embedding_dim=res_e_dim,
-      padding_idx=num_resources,
-    )
+    self.num_activities = num_activities
+    self.num_resources = num_resources
 
     self.e2cf = nn.LSTM(
-      input_size=act_e_dim+res_e_dim+1,
+      input_size=(num_activities+1)+(num_resources+1)+1,
       hidden_size=cf_dim,
       num_layers=num_lstm_layers,
       dropout=dropout_p if num_lstm_layers > 1 else 0,
@@ -65,7 +49,7 @@ class Encoder(nn.Module):
     e_attrs = []
     for trace_attr in self.trace_attributes:
       if trace_attr['type'] == 'categorical':
-        e_attr = self.attr2e[trace_attr['name']](attrs[trace_attr['name']])
+        e_attr = F.one_hot(attrs[trace_attr['name']], num_classes=len(trace_attr['possible_values'])).float()
       elif trace_attr['type'] == 'numerical':
         e_attr = attrs[trace_attr['name']].unsqueeze(1)
         e_attr = e_attr.float()
@@ -81,14 +65,14 @@ class Encoder(nn.Module):
     e_attrs = self.dropout(F.relu(self.attrs2attrs(e_attrs)))
 
     # embed acts
-    e_acts = self.act2e(acts)
+    e_acts = F.one_hot(acts.to(torch.long), num_classes=self.num_activities+1).float()
 
     # concat ts
     ts = ts.unsqueeze(dim=2)
     e_acts = torch.cat((e_acts, ts), dim=2)
 
     # embed and concat ress
-    e_ress = self.res2e(ress)
+    e_ress = F.one_hot(ress.to(torch.long), num_classes=self.num_resources+1).float()
     e_acts = torch.cat((e_acts, e_ress), dim=2)
 
     # forward acts to lstm
@@ -111,9 +95,9 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
   def __init__(self, trace_attributes, num_activities, num_resources, max_trace_length, num_lstm_layers,
-               act_e_dim, res_e_dim, cf_dim, t_dim, z_dim, c_dim, dropout_p,
+               cf_dim, t_dim, z_dim, c_dim, dropout_p,
                tot_attr_e_dim, is_conditional,
-               encoder_act2e, encoder_res2e, device):
+               device):
     super(Decoder, self).__init__()
 
     self.trace_attributes = trace_attributes
@@ -125,8 +109,6 @@ class Decoder(nn.Module):
     self.has_trace_attributes = tot_attr_e_dim > 0
     self.cf_dim = cf_dim
     self.t_dim = t_dim
-    self.encoder_act2e = encoder_act2e
-    self.encoder_res2e = encoder_res2e
     self.device = device
 
     self.dropout = nn.Dropout(p=dropout_p)
@@ -153,7 +135,7 @@ class Decoder(nn.Module):
         raise Exception(f'Unknown trace attribute type: {trace_attr["type"]}')
       
     self.t2e_act = nn.LSTM(
-      input_size=t_dim+act_e_dim,
+      input_size=t_dim+num_activities,
       hidden_size=cf_dim,
       num_layers=num_lstm_layers,
       dropout=dropout_p if num_lstm_layers > 1 else 0,
@@ -161,7 +143,7 @@ class Decoder(nn.Module):
     )
 
     self.t2e_res = nn.LSTM(
-      input_size=t_dim+act_e_dim+res_e_dim,
+      input_size=t_dim+num_activities+num_resources,
       hidden_size=cf_dim,
       num_layers=num_lstm_layers,
       dropout=dropout_p if num_lstm_layers > 1 else 0,
@@ -169,7 +151,7 @@ class Decoder(nn.Module):
     )
 
     self.t2e_ts = nn.LSTM(
-      input_size=t_dim+act_e_dim+1,
+      input_size=t_dim+num_activities+1,
       hidden_size=cf_dim,
       num_layers=num_lstm_layers,
       dropout=dropout_p if num_lstm_layers > 1 else 0,
@@ -203,8 +185,8 @@ class Decoder(nn.Module):
         attrs_rec[trace_attr['name']] = attr
 
     # acts
-    eot_input = self.encoder_act2e(torch.tensor([self.num_activities-1], dtype=torch.int64).to(self.device)).repeat(t_rec.shape[0], 1)
-    eot_res_input = self.encoder_res2e(torch.tensor([self.num_resources-1], dtype=torch.int64).to(self.device)).repeat(t_rec.shape[0], 1)
+    eot_input = F.one_hot(torch.tensor([self.num_activities-1], dtype=torch.int64).to(self.device), num_classes=self.num_activities).float().repeat(t_rec.shape[0], 1)
+    eot_res_input = F.one_hot(torch.tensor([self.num_resources-1], dtype=torch.int64).to(self.device), num_classes=self.num_resources).float().repeat(t_rec.shape[0], 1)
     ts_initial = torch.tensor([0.0]).repeat(t_rec.shape[0], 1).to(self.device)
 
     acts_lstm_input = torch.cat((t_rec, eot_input), dim=1).view(t_rec.shape[0], 1, -1)
@@ -226,7 +208,7 @@ class Decoder(nn.Module):
       act_rec = self.e2act(acts_lstm_output)
       decoder_act_outputs.append(act_rec)
       act_rec = act_rec.view(act_rec.shape[0], -1).argmax(dim=1)
-      act_rec = self.encoder_act2e(act_rec)
+      act_rec = F.one_hot(act_rec, num_classes=self.num_activities).float()
 
       # ress lstm
       ress_lstm_input = torch.cat((t_rec, act_rec, res_rec), dim=1).view(t_rec.shape[0], 1, -1)
@@ -236,7 +218,7 @@ class Decoder(nn.Module):
       res_rec = self.e2res(ress_lstm_output)
       decoder_res_outputs.append(res_rec)
       res_rec = res_rec.view(res_rec.shape[0], -1).argmax(dim=1)
-      res_rec = self.encoder_res2e(res_rec)
+      res_rec = F.one_hot(res_rec, num_classes=self.num_resources).float()
 
       # ts lstm
       ts_lstm_input = torch.cat((t_rec, act_rec, ts_rec), dim=1).view(t_rec.shape[0], 1, -1)
@@ -281,9 +263,6 @@ class VAE(nn.Module):
       num_activities=num_activities,
       num_resources=num_resources,
       num_lstm_layers=num_lstm_layers,
-      attr_e_dim=attr_e_dim,
-      act_e_dim=act_e_dim,
-      res_e_dim=res_e_dim,
       cf_dim=cf_dim,
       z_dim=z_dim,
       c_dim=c_dim,
@@ -298,8 +277,6 @@ class VAE(nn.Module):
       num_activities=num_activities,
       num_resources=num_resources,
       num_lstm_layers=num_lstm_layers,
-      act_e_dim=act_e_dim,
-      res_e_dim=res_e_dim,
       cf_dim=cf_dim,
       t_dim=self.encoder.t_dim,
       z_dim=z_dim,
@@ -307,8 +284,6 @@ class VAE(nn.Module):
       dropout_p=dropout_p,
       tot_attr_e_dim=self.encoder.tot_attr_e_dim,
       is_conditional=self.is_conditional,
-      encoder_act2e=self.encoder.act2e,
-      encoder_res2e=self.encoder.res2e,
       device=device,
     )
 
