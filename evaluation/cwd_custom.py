@@ -118,6 +118,33 @@ def circadian_workforce_distribution_distance_weekly(
     simulated_discrete_events = [int(x) for x in simulated_discrete_events['workforce'].tolist()]
     # print(simulated_discrete_events)
 
+    original_discrete_events = np.array(original_discrete_events) / max(original_discrete_events)
+    simulated_discrete_events = np.array(simulated_discrete_events) / max(simulated_discrete_events)
+
+    # Days of the week
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+    # Optional: show plots
+    # # Create subplots
+    # fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # # Plot Test Set
+    # axes[0].bar(days, original_discrete_events, color='blue', edgecolor='black', alpha=0.7)
+    # axes[0].set_xlabel("Day of the Week")
+    # axes[0].set_ylabel("Frequency")
+    # axes[0].set_title("Test Set")
+    # axes[0].grid(axis='y', linestyle='--', alpha=0.7)
+
+    # # Plot VAE
+    # axes[1].bar(days, simulated_discrete_events, color='red', edgecolor='black', alpha=0.7)
+    # axes[1].set_xlabel("Day of the Week")
+    # axes[1].set_title("LSTM_1")
+    # axes[1].grid(axis='y', linestyle='--', alpha=0.7)
+
+    # # Show the plots
+    # plt.tight_layout()
+    # plt.show()
+
     distances = []
 
     distances += [wasserstein_distance(original_discrete_events, simulated_discrete_events)]

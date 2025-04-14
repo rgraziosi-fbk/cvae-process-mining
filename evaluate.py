@@ -110,6 +110,7 @@ evaluate_generation(
 
   # resources
   should_plot_resource_distribution=evaluation_config['SHOULD_PLOT_RESOURCE_DISTRIBUTION'],
+  resource_distribution_plot_roles_instead_of_resources=evaluation_config['RESOURCE_DISTRIBUTION_PLOT_ROLES_INSTEAD_OF_RESOURCES'],
   should_plot_activity_by_resource_distribution=evaluation_config['SHOULD_PLOT_ACTIVITY_BY_RESOURCE_DISTRIBUTION'],
 
   # trace attribute distributions

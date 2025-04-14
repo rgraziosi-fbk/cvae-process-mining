@@ -13,6 +13,9 @@ from log_distance_measures.work_in_progress import work_in_progress_distance
 from log_distance_measures.cycle_time_distribution import cycle_time_distribution_distance
 from log_distance_measures.circadian_workforce_distribution import circadian_workforce_distribution_distance
 
+# our custom cwd metric
+from evaluation.cwd_custom import circadian_workforce_distribution_distance_weekly
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils import read_log
@@ -188,7 +191,8 @@ def compute_log_distance_measure(
         generated_log = generated_log.drop(columns=[gen_resource_key, 'user'])
         generated_log = generated_log.rename(columns={'role': gen_resource_key})
 
-    return circadian_workforce_distribution_distance(
+    print('[WARNING] Computing custom CWD metric. Change code if you want to use the default one.')
+    return circadian_workforce_distribution_distance_weekly(
       original_log,
       original_log_ids,
       generated_log,

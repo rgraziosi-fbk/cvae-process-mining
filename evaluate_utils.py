@@ -88,6 +88,7 @@ def evaluate_generation(
 
   # resources
   should_plot_resource_distribution=True,
+  resource_distribution_plot_roles_instead_of_resources=False,
   should_plot_activity_by_resource_distribution=True,
 
   # trace attribute distributions
@@ -470,9 +471,10 @@ def evaluate_generation(
     
       for i, generated_log_path in enumerate(log_paths):
         plot_resource_distribution(
-          dataset_info['TEST'],
+          dataset_info['TRAIN'],
           generated_log_path,
           dataset_info=dataset_info,
+          cwd_resource_to_role_mapping_file=cwd_resource_to_role_mapping_file if resource_distribution_plot_roles_instead_of_resources else None,
           output_path=os.path.join(output_path, 'resource-distributions'),
           output_filename=f'resource-distribution-gen-{method}-{i+1}.png',
         )
