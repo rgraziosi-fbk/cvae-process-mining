@@ -10,7 +10,7 @@ from ray.air.config import RunConfig, CheckpointConfig
 
 from arg_parser import parse_arguments
 from utils import get_dataset_attributes_info
-from config import DATASET_INFO, MAX_TRACE_LENGTH, MAX_NUM_EPOCHS, NUM_SAMPLES, CHECKPOINT_EVERY, config
+from config import DATASET_INFO, MODEL_TO_USE, MAX_TRACE_LENGTH, MAX_NUM_EPOCHS, NUM_SAMPLES, CHECKPOINT_EVERY, config
 from train import train
 from early_stopper import EarlyStopper
 
@@ -79,6 +79,7 @@ scheduler = ASHAScheduler(
 trainable = partial(
   train,
   dataset_info=DATASET_INFO,
+  model_to_use=MODEL_TO_USE,
   output_dir=os.path.abspath('output'),
   checkpoint_every=CHECKPOINT_EVERY,
   device=DEVICE,

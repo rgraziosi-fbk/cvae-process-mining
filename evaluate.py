@@ -1,9 +1,10 @@
 import pickle
 import torch
 
-from config import evaluation_config, config, DATASET_INFO, MAX_TRACE_LENGTH
+from config import evaluation_config, config, MODEL_TO_USE, DATASET_INFO, MAX_TRACE_LENGTH
 from utils import get_dataset_attributes_info
 from model import VAE
+from model_transformer import VAETransformer
 from evaluate_utils import evaluate_generation
 
 # Load model checkpoint (pickle or torch)
@@ -34,20 +35,39 @@ DATASET_INFO['TRACE_ATTRIBUTES'] = dataset_attributes_info['trace_attributes']
 config['C_DIM'] = DATASET_INFO['NUM_LABELS']
 
 # Load model
-model = VAE(
-  trace_attributes=DATASET_INFO['TRACE_ATTRIBUTES'],
-  num_activities=DATASET_INFO['NUM_ACTIVITIES'],
-  num_resources=DATASET_INFO['NUM_RESOURCES'],
-  max_trace_length=DATASET_INFO['MAX_TRACE_LENGTH'],
-  num_lstm_layers=config['NUM_LSTM_LAYERS'],
-  attr_e_dim=config['ATTR_E_DIM'],
-  act_e_dim=config['ACT_E_DIM'],
-  res_e_dim=config['RES_E_DIM'],
-  cf_dim=config['CF_DIM'],
-  c_dim=config['C_DIM'],
-  z_dim=config['Z_DIM'],
-  dropout_p=config['DROPOUT_P'],
-).to('cpu')
+if MODEL_TO_USE == 'lstm':
+  model = VAE(
+    trace_attributes=DATASET_INFO['TRACE_ATTRIBUTES'],
+    num_activities=DATASET_INFO['NUM_ACTIVITIES'],
+    num_resources=DATASET_INFO['NUM_RESOURCES'],
+    max_trace_length=DATASET_INFO['MAX_TRACE_LENGTH'],
+    num_lstm_layers=config['NUM_LSTM_LAYERS'],
+    attr_e_dim=config['ATTR_E_DIM'],
+    act_e_dim=config['ACT_E_DIM'],
+    res_e_dim=config['RES_E_DIM'],
+    cf_dim=config['CF_DIM'],
+    c_dim=config['C_DIM'],
+    z_dim=config['Z_DIM'],
+    dropout_p=config['DROPOUT_P'],
+  ).to('cpu')
+elif MODEL_TO_USE == 'transformer':
+  model = VAETransformer(
+    trace_attributes=DATASET_INFO['TRACE_ATTRIBUTES'],
+    num_activities=DATASET_INFO['NUM_ACTIVITIES'],
+    num_resources=DATASET_INFO['NUM_RESOURCES'],
+    max_trace_length=DATASET_INFO['MAX_TRACE_LENGTH'],
+    transformer_nhead=config['TRANSFORMER_NHEAD'],
+    transformer_dim_feedforward=config['TRANSFORMER_DIM_FEEDFORWARD'],
+    transformer_num_layers=config['TRANSFORMER_NUM_LAYERS'],
+    attr_e_dim=config['ATTR_E_DIM'],
+    act_e_dim=config['ACT_E_DIM'],
+    res_e_dim=config['RES_E_DIM'],
+    c_dim=config['C_DIM'],
+    z_dim=config['Z_DIM'],
+    dropout_p=config['DROPOUT_P'],
+    autoregressive_training=config['TRANSFORMER_AUTOREGRESSIVE_TRAINING'],
+    teacher_forcing_word_dropout_p=config['TRANSFORMER_TEACHER_FORCING_WORD_DROPOUT_P'],
+  )
 
 model.load_state_dict(checkpoint['model_state_dict'])
 

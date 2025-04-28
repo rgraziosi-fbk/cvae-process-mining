@@ -1,3 +1,4 @@
+import time
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -312,6 +313,9 @@ class VAE(nn.Module):
       device=device,
     )
 
+    self.times_enc = []
+    self.times_dec = []
+
   # p(z|x)
   def encode(self, x, c=None):
     return self.encoder(x, c)
@@ -321,8 +325,22 @@ class VAE(nn.Module):
     return self.decoder(z, c)
 
   def forward(self, x, c=None):
+    start_enc = time.time()
     mean, var = self.encode(x, c)
+    end_enc = time.time()
+
     epsilon = torch.randn_like(var)
     z = mean + var*epsilon # reparametrization trick
     
-    return self.decode(z, c), mean, var
+    start_dec = time.time()
+    out = self.decode(z, c)
+    end_dec = time.time()
+
+    self.times_enc.append(end_enc-start_enc)
+    self.times_dec.append(end_dec-start_dec)
+
+    if len(self.times_enc) % 10 == 0:
+      print(f'Encoder: {sum(self.times_enc) / len(self.times_enc)}s')
+      print(f'Decoder: {sum(self.times_dec) / len(self.times_dec)}s')
+    
+    return out, mean, var

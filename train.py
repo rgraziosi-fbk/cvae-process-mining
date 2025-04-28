@@ -8,10 +8,11 @@ import torch.nn.functional as F
 from ray.train import Checkpoint, get_checkpoint, report, get_context
 
 from model import VAE
+from model_transformer import VAETransformer
 from train_utils import get_weights_cycle_linear
 from utils import move_to_device
 
-def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', device='cpu', seed=42):
+def train(config, dataset_info={}, model_to_use='lstm', checkpoint_every=10, output_dir='output', device='cpu', seed=42):
   # Dataset
   generator = torch.Generator().manual_seed(seed)
   train_dataset = dataset_info['CLASS'](
@@ -48,21 +49,45 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
   val_loader = DataLoader(dataset=val_dataset, batch_size=config['BATCH_SIZE'], shuffle=True, generator=generator)
 
   # Model
-  model = VAE(
-    trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
-    num_activities=dataset_info['NUM_ACTIVITIES'],
-    num_resources=dataset_info['NUM_RESOURCES'],
-    max_trace_length=dataset_info['MAX_TRACE_LENGTH'],
-    num_lstm_layers=config['NUM_LSTM_LAYERS'],
-    attr_e_dim=config['ATTR_E_DIM'],
-    act_e_dim=config['ACT_E_DIM'],
-    res_e_dim=config['RES_E_DIM'],
-    cf_dim=config['CF_DIM'],
-    c_dim=config['C_DIM'],
-    z_dim=config['Z_DIM'],
-    dropout_p=config['DROPOUT_P'],
-    device=device,
-  ).to(device)
+  if model_to_use == 'lstm':
+    model = VAE(
+      trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
+      num_activities=dataset_info['NUM_ACTIVITIES'],
+      num_resources=dataset_info['NUM_RESOURCES'],
+      max_trace_length=dataset_info['MAX_TRACE_LENGTH'],
+      num_lstm_layers=config['NUM_LSTM_LAYERS'],
+      attr_e_dim=config['ATTR_E_DIM'],
+      act_e_dim=config['ACT_E_DIM'],
+      res_e_dim=config['RES_E_DIM'],
+      cf_dim=config['CF_DIM'],
+      c_dim=config['C_DIM'],
+      z_dim=config['Z_DIM'],
+      dropout_p=config['DROPOUT_P'],
+      device=device,
+    ).to(device)
+  elif model_to_use == 'transformer':
+    model = VAETransformer(
+      trace_attributes=dataset_info['TRACE_ATTRIBUTES'],
+      num_activities=dataset_info['NUM_ACTIVITIES'],
+      num_resources=dataset_info['NUM_RESOURCES'],
+      max_trace_length=dataset_info['MAX_TRACE_LENGTH'],
+      transformer_nhead=config['TRANSFORMER_NHEAD'],
+      transformer_dim_feedforward=config['TRANSFORMER_DIM_FEEDFORWARD'],
+      transformer_num_layers=config['TRANSFORMER_NUM_LAYERS'],
+      attr_e_dim=config['ATTR_E_DIM'],
+      act_e_dim=config['ACT_E_DIM'],
+      res_e_dim=config['RES_E_DIM'],
+      c_dim=config['C_DIM'],
+      z_dim=config['Z_DIM'],
+      dropout_p=config['DROPOUT_P'],
+      autoregressive_training=config['TRANSFORMER_AUTOREGRESSIVE_TRAINING'],
+      teacher_forcing_word_dropout_p=config['TRANSFORMER_TEACHER_FORCING_WORD_DROPOUT_P'],
+      device=device,
+    ).to(device)
+
+  # Print number of parameters
+  total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+  print(f'Number of trainable parameters: {total_params}')
 
   # Loss functions
   def reconstruction_loss_fn(x_rec, x):
@@ -116,6 +141,32 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
     loss = cat_attrs_loss + num_attrs_loss + cf_loss + ts_loss + res_loss
 
     return loss, torch.tensor([cat_attrs_loss, num_attrs_loss, cf_loss, ts_loss, res_loss])
+  
+  # Loss function ONLY ACTIVITIES
+  def reconstruction_loss_fn_ONLY_ACTS(x_rec, x):
+    cf_loss = torch.tensor(0.0).to(device)
+
+    cf_loss_fn = nn.BCELoss(reduction='sum')
+
+    if type(x_rec) == tuple:
+      attrs_rec, acts_rec, ts_rec, ress_rec = x_rec
+    else:
+      acts_rec = x_rec
+
+    attrs, acts, ts, ress = x
+
+    # turn all PAD activities into EOT activities
+    acts = torch.where(acts == train_dataset.activity2n[train_dataset.PADDING_ACTIVITY], train_dataset.activity2n[train_dataset.EOT_ACTIVITY], acts).to(device)
+    # convert acts to one-hot encoding
+    acts = F.one_hot(acts.to(torch.int64), num_classes=dataset_info['NUM_ACTIVITIES']).to(torch.float32)
+    
+    # acts
+    cf_loss += cf_loss_fn(acts_rec, acts)
+
+    # sum up loss components
+    loss = cf_loss
+
+    return loss, torch.tensor([cf_loss])
 
   def kl_divergence_loss_fn(mean, var):
     var = torch.clamp(var, min=1e-9)
@@ -161,9 +212,12 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
       x_rec, mean, var = model(x, y)
       x_rec, mean, var = move_to_device(x_rec, device), move_to_device(mean, device), move_to_device(var, device)
 
-      rec_loss, rec_loss_components = reconstruction_loss_fn(x_rec, x)
+      rec_loss, rec_loss_components = reconstruction_loss_fn_ONLY_ACTS(x_rec, x)
       kl_loss = kl_divergence_loss_fn(mean, var)
       loss = rec_loss + w_kl[epoch]*kl_loss
+
+      # if epoch % 10 == 0:
+      #   print(w_kl[epoch])
 
       train_loss += loss.item()
       train_rec_loss += rec_loss.item()
@@ -176,14 +230,14 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
       optimizer.step()
 
       # compute number of traces with monotonically increasing ts
-      _, _, ts_rec, _ = x_rec
-      ts_num_conformant += torch.sum(ts_rec >= -0.000001).item()
+      # _, _, ts_rec, _ = x_rec
+      # ts_num_conformant += torch.sum(ts_rec >= -0.000001).item()
 
     train_loss /= len(train_dataset)
     train_rec_loss /= len(train_dataset)
     train_kl_loss /= len(train_dataset)
     train_rec_loss_components /= len(train_dataset)
-    ts_perc_conformant =  ts_num_conformant / (len(train_dataset) * dataset_info['MAX_TRACE_LENGTH'])
+    # ts_perc_conformant =  ts_num_conformant / (len(train_dataset) * dataset_info['MAX_TRACE_LENGTH'])
 
     # Validation
     val_loss = 0.0
@@ -194,7 +248,7 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
         x_rec, mean, var = model(x, y)
         x_rec, mean, var = move_to_device(x_rec, device), move_to_device(mean, device), move_to_device(var, device)
 
-        rec_loss, rec_loss_components = reconstruction_loss_fn(x_rec, x)
+        rec_loss, rec_loss_components = reconstruction_loss_fn_ONLY_ACTS(x_rec, x)
         kl_loss = kl_divergence_loss_fn(mean, var)
         loss = rec_loss + w_kl[epoch]*kl_loss
 
@@ -229,13 +283,13 @@ def train(config, dataset_info={}, checkpoint_every=10, output_dir='output', dev
       'w_kl': w_kl[epoch],
 
       # rec_loss components 
-      'rec_cat_attrs_loss': train_rec_loss_components[0].item(),
-      'rec_num_attrs_loss': train_rec_loss_components[1].item(),
+      # 'rec_cat_attrs_loss': train_rec_loss_components[0].item(),
+      # 'rec_num_attrs_loss': train_rec_loss_components[1].item(),
       'rec_cf_loss': train_rec_loss_components[2].item(),
-      'rec_ts_loss': train_rec_loss_components[3].item(),
-      'rec_res_loss': train_rec_loss_components[4].item(),
+      # 'rec_ts_loss': train_rec_loss_components[3].item(),
+      # 'rec_res_loss': train_rec_loss_components[4].item(),
 
-      'rec_ts_perc_conformant': ts_perc_conformant,
+      # 'rec_ts_perc_conformant': ts_perc_conformant,
     }
 
     # if it's a checkpoint

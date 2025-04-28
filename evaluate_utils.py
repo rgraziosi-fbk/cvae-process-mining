@@ -145,6 +145,7 @@ def evaluate_generation(
     else:
       log_paths_per_method[CVAE_KEY] = glob.glob(os.path.join(output_path, 'gen') + '/*.csv')
 
+  exit(0)
 
   # OLD_CVAE
   if should_use_old_cvae:

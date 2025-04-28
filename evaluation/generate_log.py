@@ -13,9 +13,11 @@ from scripts.preprocess_log import add_relative_timestamp_between_activities, ad
 def generate(model, mean, var, c=None):
   z = mean + var*torch.randn_like(var)
   z = z.view(1, -1)
-  attrs, acts, ts, ress = model.decode(z, c)
+  # attrs, acts, ts, ress = model.decode(z, c)
+  acts = model.decode(z, c)
   
-  return attrs, acts, ts, ress
+  # return attrs, acts, ts, ress
+  return acts
 
 
 def generate_log(
@@ -68,84 +70,93 @@ def generate_log(
 
     condition_one_hot = None
 
-    if model.is_conditional:
-      condition_one_hot = dataset.label2onehot[condition].view(1, -1)
+    # if model.is_conditional:
+      # condition_one_hot = dataset.label2onehot[condition].view(1, -1)
+    condition_one_hot = dataset.label2onehot[condition].view(1, -1)
 
     for _ in range(num_to_generate):
       mean, var = torch.zeros((model.z_dim)), torch.ones((model.z_dim))
-      attrs, acts, ts, ress = generate(model, mean, var, condition_one_hot)
+      # attrs, acts, ts, ress = generate(model, mean, var, condition_one_hot)
+      acts = generate(model, mean, var, condition_one_hot)
 
-      # count number of ts < 0, and set them to 0
-      ts_not_conformant_count += torch.sum(ts < 0).item()
-      ts[ts < 0] = 0
+      # # count number of ts < 0, and set them to 0
+      # ts_not_conformant_count += torch.sum(ts < 0).item()
+      # ts[ts < 0] = 0
 
-      # attrs
-      trace_attrs = {}
-      for attr in dataset.trace_attributes:
-        if attr['type'] == 'categorical':
-          attrs[attr['name']] = torch.argmax(attrs[attr['name']], dim=1)
-        elif attr['type'] == 'numerical':
-          attrs[attr['name']] = attr['min_value'] + (attrs[attr['name']] * (attr['max_value'] - attr['min_value'])) # min-max denormalization
-        else:
-          raise Exception(f'Unknown trace attribute type: {attr["type"]}')
+      # # attrs
+      # trace_attrs = {}
+      # for attr in dataset.trace_attributes:
+      #   if attr['type'] == 'categorical':
+      #     attrs[attr['name']] = torch.argmax(attrs[attr['name']], dim=1)
+      #   elif attr['type'] == 'numerical':
+      #     attrs[attr['name']] = attr['min_value'] + (attrs[attr['name']] * (attr['max_value'] - attr['min_value'])) # min-max denormalization
+      #   else:
+      #     raise Exception(f'Unknown trace attribute type: {attr["type"]}')
         
-        trace_attrs[attr['name']] = attrs[attr['name']]
+      #   trace_attrs[attr['name']] = attrs[attr['name']]
       
       # acts
       acts = torch.argmax(acts, dim=2)
 
-      # ress
-      ress = torch.argmax(ress[:,:,:-1], dim=2) # exclude eot resource
+      # # ress
+      # ress = torch.argmax(ress[:,:,:-1], dim=2) # exclude eot resource
 
       generated.append({
-        'trace_attributes': trace_attrs,
+        # 'trace_attributes': trace_attrs,
         'activities': acts[0],
-        'timestamps': ts[0],
-        'resources': ress[0],
+        # 'timestamps': ts[0],
+        # 'resources': ress[0],
         'label': condition,
       })
 
-  # print percentage of timestamps not conformant (i.e. < 0)
-  tot_num_to_generate = sum(generation_config.values())
-  ts_not_conformant_perc = (ts_not_conformant_count / (tot_num_to_generate*dataset_info['MAX_TRACE_LENGTH'])) * 100
-  for out in [open(os.path.join(output_path, f'{output_name}-stats.txt'), mode='+a'), sys.stdout]:
-    print(f'Number of timestamps non-conformant: {ts_not_conformant_count} ({ts_not_conformant_perc:.2f}%) (set to 0)', file=out)
+  # # print percentage of timestamps not conformant (i.e. < 0)
+  # tot_num_to_generate = sum(generation_config.values())
+  # ts_not_conformant_perc = (ts_not_conformant_count / (tot_num_to_generate*dataset_info['MAX_TRACE_LENGTH'])) * 100
+  # for out in [open(os.path.join(output_path, f'{output_name}-stats.txt'), mode='+a'), sys.stdout]:
+  #   print(f'Number of timestamps non-conformant: {ts_not_conformant_count} ({ts_not_conformant_perc:.2f}%) (set to 0)', file=out)
 
   # Save generated data
   if output_path:
     new_data = []
 
     for i, generated_case in enumerate(generated):
-      trace_attrs, activities, timestamps, resources, label = generated_case['trace_attributes'], generated_case['activities'], generated_case['timestamps'], generated_case['resources'], generated_case['label']
+      # trace_attrs, activities, timestamps, resources, label = generated_case['trace_attributes'], generated_case['activities'], generated_case['timestamps'], generated_case['resources'], generated_case['label']
+      activities = generated_case['activities']
+      label = generated_case['label']
 
-      start_datetime = test_dataset.log['time:timestamp'].min() + datetime.timedelta(minutes=trace_attrs['relative_timestamp_from_start'].item())
-      current_datetime = start_datetime
+      # start_datetime = test_dataset.log['time:timestamp'].min() + datetime.timedelta(minutes=trace_attrs['relative_timestamp_from_start'].item())
+      # current_datetime = start_datetime
 
-      for j, (activity, resource) in enumerate(zip(activities, resources)):
+      current_datetime = test_dataset.log['time:timestamp'].min()
+
+      # for j, (activity, resource) in enumerate(zip(activities, resources)):
+      for j, activity in enumerate(activities):
         activity_name = dataset.n2activity[activity.item()]
-        resource_name = dataset.n2resource[resource.item()]
+        # resource_name = dataset.n2resource[resource.item()]
 
         if activity_name == 'EOT':
           break
 
-        cat_attrs = { attr_name: dataset.i2s[attr_name][attr_val.item()] for attr_name, attr_val in trace_attrs.items() if attr_name in dataset.i2s }
-        num_attrs = { attr_name: attr_val.item() for attr_name, attr_val in trace_attrs.items() if attr_name not in dataset.i2s }
+        # cat_attrs = { attr_name: dataset.i2s[attr_name][attr_val.item()] for attr_name, attr_val in trace_attrs.items() if attr_name in dataset.i2s }
+        # num_attrs = { attr_name: attr_val.item() for attr_name, attr_val in trace_attrs.items() if attr_name not in dataset.i2s }
         
-        relative_ts_minutes = (timestamps[j] * dataset.highest_ts).item()
-        current_datetime = current_datetime + datetime.timedelta(minutes=relative_ts_minutes)
+        # relative_ts_minutes = (timestamps[j] * dataset.highest_ts).item()
+        # current_datetime = current_datetime + datetime.timedelta(minutes=relative_ts_minutes)
         formatted_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
         
         row = {
-          **cat_attrs,
-          **num_attrs,
+          # **cat_attrs,
+          # **num_attrs,
           dataset_info['ACTIVITY_KEY']: activity_name,
-          dataset_info['RESOURCE_KEY']: resource_name,
+          # dataset_info['RESOURCE_KEY']: resource_name,
+          dataset_info['RESOURCE_KEY']: 'NA',
           dataset_info['TRACE_KEY']: f'GEN{i}',
           dataset_info['LABEL_KEY']: label,
           # also add these default columns
           'time:timestamp': formatted_datetime,
           'concept:name': activity_name,
-          'org:resource': resource_name,
+          # 'org:resource': resource_name,
+          'org:resource': 'NA',
           'case:concept:name': f'GEN{i}',
           'case:label': label,
         }
