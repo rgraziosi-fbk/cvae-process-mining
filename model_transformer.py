@@ -87,9 +87,20 @@ class Encoder(nn.Module):
 
     # self.conv = nn.Conv1d(max_trace_length, 1, 1)
     self.attn_pool = AttentionPooling(d_dim)
+    # self.lstm = nn.LSTM(
+    #   input_size=d_dim,
+    #   hidden_size=200,
+    #   num_layers=1,
+    #   batch_first=True,
+    # )
+
 
     self.linear_mean = nn.Linear(d_dim+c_dim, z_dim)
     self.linear_var = nn.Linear(d_dim+c_dim, z_dim)
+
+    # in case of LSTM
+    # self.linear_mean = nn.Linear(200+c_dim, z_dim)
+    # self.linear_var = nn.Linear(200+c_dim, z_dim)
 
   def forward(self, x, c=None):
     attrs, acts, ts, ress = x
@@ -118,6 +129,9 @@ class Encoder(nn.Module):
     # t = transformer_out[:,-1,:]
     # ... or, use AttentionPooling
     t = self.attn_pool(transformer_out)
+    # ... or, use LSTM
+    # t = self.lstm(transformer_out)
+    # t = t[0][:,-1]
 
     # concat conditional label (BS, E_DIM+C_DIM)
     t = torch.cat((t, c), dim=1)
