@@ -11,6 +11,7 @@ class GenericDataset(Dataset):
     max_trace_length: length of the longest trace in the log + 1 (for EOT activity)
     num_activities: number of different activities in the log + 1 (for EOT activity)
     num_labels: number of different labels in the log
+    labels: list of possible labels
     trace_key: name of the column of the log containing traces id
     activity_key: name of the column of the log containing activity names
     timestamp_key: name of the column of the log containing the timestamp
@@ -20,7 +21,7 @@ class GenericDataset(Dataset):
     resources: (optional) list of resources to consider (used to impose a specific list of resources instead of using the ones found in the provided log)
   """
   def __init__(
-    self, dataset_path='', max_trace_length=100, num_activities=10, num_labels=2,
+    self, dataset_path='', max_trace_length=100, num_activities=10, num_labels=2, labels=None,
     trace_key='case:concept:name', activity_key='concept:name', timestamp_key='time:timestamp', resource_key='org:resource',
     label_key='case:label', trace_attributes=[], activities=None, resources=None, highest_ts=None,
   ):
@@ -76,8 +77,12 @@ class GenericDataset(Dataset):
     # Get highest ts value
     self.highest_ts = self.log[timestamp_key].quantile(q=0.95) if highest_ts is None else highest_ts
 
-    # Get label names
-    labels = self.log[label_key].unique().tolist()
+    # Get labels
+    if labels is None:
+      labels = self.log[label_key].unique().tolist()
+    else:
+      labels = copy.deepcopy(labels)
+    
     labels.sort()
 
     assert len(labels) == self.num_labels
