@@ -27,6 +27,7 @@ max_trace_length = MAX_TRACE_LENGTH if MAX_TRACE_LENGTH else dataset_attributes_
 DATASET_INFO['MAX_TRACE_LENGTH'] = max_trace_length + 1
 DATASET_INFO['ACTIVITIES'] = dataset_attributes_info['activities']
 DATASET_INFO['NUM_ACTIVITIES'] = len(dataset_attributes_info['activities']) + 1
+DATASET_INFO['LABELS'] = dataset_attributes_info['labels']
 DATASET_INFO['RESOURCES'] = dataset_attributes_info['resources']
 DATASET_INFO['NUM_RESOURCES'] = len(dataset_attributes_info['resources']) + 1
 DATASET_INFO['TRACE_ATTRIBUTES'] = dataset_attributes_info['trace_attributes']
